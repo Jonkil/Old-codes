@@ -1,0 +1,328 @@
+Microsoft (R) Macro Assembler  Version 4.00                 5/3/6                                                            Page     1-1
+                                                            
+
+                             C  include io.asm 
+                             C   
+                             C  .list 
+                                 
+                                 
+ 0000                           stack segment stack 
+ 0000  008A[                    	DB 138 dup(?) 
+            ??                  
+                         ]      
+                                
+ 008A                           stack ends 
+ 0000                           data segment 
+ 0000  0064                     	NT DW 100		;возможное кол-во символов 
+ 0002  0063[                    	T DB 99 dup (?),'$'	;исходный текст 
+            ??                  
+                         ]      
+               24               
+ 0066  45 6E 74 65 72 20 73     	C1 DB 'Enter some letters no more 100 and put 
+				the point','$' 
+       6F 6D 65 20 6C 65 74     
+       74 65 72 73 20 6E 6F     
+       20 6D 6F 72 65 20 31     
+       30 30 20 61 6E 64 20     
+       70 75 74 20 74 68 65     
+       20 70 6F 69 6E 74 24     
+ 0097  59 6F 75 72 20 6C 65     	C2 DB 'Your letters follow is','$' 
+       74 74 65 72 73 20 66     
+       6F 6C 6C 6F 77 20 69     
+       73 24                    
+ 00AE  54 72 61 6E 73 66 6F     	C3 DB 'Transformation #','$' 
+       72 6D 61 74 69 6F 6E     
+       20 23 24                 
+ 00BF                           data ends 
+                                 
+ 0000                           code segment 
+                                	assume ss:stack, ds:data, cs:code 
+                                 
+                                ;процедура преобразования №1 - Big To Small 
+ 0000                           BTS	PROC 
+                                	OUTCH '1' 
+ 0000  52                     1        push dx
+ 0001  50                     1        push ax
+ 0002  B2 31                  1        mov dl,'1'
+ 0004  B4 02                  1        mov ah,2
+ 0006  CD 21                  1        int 21h
+ 0008  58                     1        pop ax
+ 0009  5A                     1        pop dx
+ 000A  56                       	push SI 
+ 000B  51                       	push CX 
+                                 
+ 000C  BE 0000                  	mov SI,0 
+ 000F  8B 4E 00                 	mov CX,[BP] 
+ 0012  80 38 41                 NEXT2:	CMP BYTE PTR [BX][SI],'A' 
+ 0015  72 0B                    	JB NOBLAT 
+Microsoft (R) Macro Assembler  Version 4.00                 5/3/6                                                            Page     1-2
+                                                            
+
+ 0017  80 38 5A                 	CMP BYTE PTR [BX][SI],'Z' 
+ 001A  77 06                    	JA NOBLAT 
+ 001C  80 28 41                 	SUB BYTE PTR [BX][SI],'A' 
+ 001F  80 00 61                 	ADD BYTE PTR [BX][SI],'a' 
+ 0022  46                       NOBLAT:	INC SI 
+ 0023  E2 ED                    	LOOP NEXT2 
+                                 
+ 0025  59                       	pop CX 
+ 0026  5E                       	pop SI 
+ 0027  C3                       	RET 
+                                BTS	ENDP 
+                                 
+                                ;процедура преобразования №2 - Delete Double La
+				t 
+ 0028                           DDL	PROC 
+                                	OUTCH '2' 
+ 0028  52                     1        push dx
+ 0029  50                     1        push ax
+ 002A  B2 32                  1        mov dl,'2'
+ 002C  B4 02                  1        mov ah,2
+ 002E  CD 21                  1        int 21h
+ 0030  58                     1        pop ax
+ 0031  5A                     1        pop dx
+ 0032  57                       	push DI 
+ 0033  56                       	push SI 
+ 0034  50                       	push AX 
+ 0035  51                       	push CX 
+                                 
+ 0036  BF 0000                  	mov DI,0 
+ 0039  BE 0001                  	mov SI,1 
+ 003C  8B 4E 00                 	mov CX,[BP] 
+ 003F  8A 00                    NEXT3:	mov AL,[BX][SI] 
+ 0041  38 01                    	CMP BYTE PTR [BX][DI],AL 
+ 0043  74 05                    	JE DELLAT 
+ 0045  47                       	INC DI 
+ 0046  8A 00                    	mov AL,[BX][SI] 
+ 0048  88 01                    	mov BYTE PTR [BX][DI],AL 
+ 004A  46                       DELLAT: INC SI 
+ 004B  E2 F2                    	LOOP NEXT3 
+ 004D  47                       	INC DI 
+ 004E  C6 01 24                 	mov BYTE PTR [BX][DI],'$' 
+ 0051  8A 05                    	mov AL,[DI] 
+ 0053  88 46 00                 	mov BYTE PTR [BP],AL 
+                                 
+ 0056  59                       	pop CX 
+ 0057  58                       	pop AX 
+ 0058  5E                       	pop SI 
+ 0059  5F                       	pop DI 
+ 005A  C3                       	RET 
+                                DDL	ENDP 
+                                 
+                                 
+ 005B  B8 ---- R                start:	mov AX,data 
+ 005E  8E D8                    	mov DS,AX		;загрузка сегмента data 
+Microsoft (R) Macro Assembler  Version 4.00                 5/3/6                                                            Page     1-3
+                                                            
+
+                                 
+ 0060  8D 16 0066 R             	LEA DX,C1 
+                                	OUTSTR 
+ 0064  50                     1         push ax
+ 0065  B4 09                  1         mov ah,9
+ 0067  CD 21                  1         int 21h
+ 0069  58                     1         pop ax
+                                	NEWLINE 
+ 006A  9A 0000 ---- E         1          call procnl
+                                 
+ 006F  8B 0E 0000 R             	mov CX,NT		;начало ввода исходного текста 
+ 0073  BE 0000                  	mov SI,0 
+                                	OUTCH '>' 
+ 0076  52                     1        push dx
+ 0077  50                     1        push ax
+ 0078  B2 3E                  1        mov dl,'>'
+ 007A  B4 02                  1        mov ah,2
+ 007C  CD 21                  1        int 21h
+ 007E  58                     1        pop ax
+ 007F  5A                     1        pop dx
+                                 
+ 0080                           INT:	INCH AL 
+ 0080  B0 00                  1        mov al,0
+ 0082  9A 0000 ---- E         1        call procinch
+ 0087  3C 2E                    	CMP AL,'.' 
+ 0089  74 07                    	JE ENDT 
+ 008B  88 84 0002 R             	mov T[SI],AL 
+ 008F  46                       	INC SI 
+ 0090  E2 EE                    	LOOP INT  
+ 0092  C6 84 0002 R 24          ENDT:	mov T[SI],'$' 
+ 0097  4E                       	DEC SI 
+ 0098  89 36 0000 R             	mov NT,SI		;введенное кол-во символов 
+                                 
+                                	NEWLINE 
+ 009C  9A 0000 ---- E         1          call procnl
+ 00A1  8D 16 0097 R             	LEA DX,C2 
+                                	OUTSTR 
+ 00A5  50                     1         push ax
+ 00A6  B4 09                  1         mov ah,9
+ 00A8  CD 21                  1         int 21h
+ 00AA  58                     1         pop ax
+                                 
+                                	NEWLINE 
+ 00AB  9A 0000 ---- E         1          call procnl
+                                	OUTCH ' ' 
+ 00B0  52                     1        push dx
+ 00B1  50                     1        push ax
+ 00B2  B2 20                  1        mov dl,' '
+ 00B4  B4 02                  1        mov ah,2
+ 00B6  CD 21                  1        int 21h
+ 00B8  58                     1        pop ax
+ 00B9  5A                     1        pop dx
+ 00BA  BA 0002 R                	mov DX,offset T 
+                                	OUTSTR			;вывод на экран введенной строки 
+Microsoft (R) Macro Assembler  Version 4.00                 5/3/6                                                            Page     1-4
+                                                            
+
+ 00BD  50                     1         push ax
+ 00BE  B4 09                  1         mov ah,9
+ 00C0  CD 21                  1         int 21h
+ 00C2  58                     1         pop ax
+                                 
+                                	NEWLINE 
+ 00C3  9A 0000 ---- E         1          call procnl
+                                	NEWLINE 
+ 00C8  9A 0000 ---- E         1          call procnl
+ 00CD  8D 16 00AE R             	LEA DX,C3 
+                                	OUTSTR 
+ 00D1  50                     1         push ax
+ 00D2  B4 09                  1         mov ah,9
+ 00D4  CD 21                  1         int 21h
+ 00D6  58                     1         pop ax
+                                 
+                                ;проверка текста на содержание не менее 3 лат. 
+				букв 
+ 00D7  B0 00                    	mov AL,0		;число лат. букв 
+ 00D9  BE 0000                  	mov SI,0 
+ 00DC  8B 0E 0000 R             	mov CX,NT 
+ 00E0  80 BC 0002 R 61          NEXT1:	CMP T[SI],'a' 
+ 00E5  72 0A                    	JB NOSLAT 
+ 00E7  80 BC 0002 R 7A          	CMP T[SI],'z' 
+ 00EC  77 03                    	JA NOSLAT 
+ 00EE  EB 0F 90                 	JMP YESLAT 
+ 00F1  80 BC 0002 R 41          NOSLAT:	CMP T[SI],'A' 
+ 00F6  72 0D                    	JB NOLAT 
+ 00F8  80 BC 0002 R 5A          	CMP T[SI],'Z' 
+ 00FD  77 06                    	JA NOLAT 
+ 00FF  FE C0                    YESLAT:	INC AL 
+ 0101  3C 03                    	CMP AL,3 
+ 0103  74 11                    	JE PRAV1 
+ 0105  46                       NOLAT:	INC SI 
+ 0106  E2 D8                    	LOOP NEXT1 
+                                 
+ 0108  8D 2E 0000 R             	LEA BP,NT 
+ 010C  8D 1E 0002 R             	LEA BX,T 
+ 0110  E8 0028 R                	CALL DDL		;переход на правило 2 
+ 0113  EB 0C 90                 	JMP ENDING 
+                                 
+ 0116  8D 2E 0000 R             PRAV1:	LEA BP,NT 
+ 011A  8D 1E 0002 R             	LEA BX,T 
+ 011E  E8 0000 R                	CALL BTS		;переход на правило 1 
+                                 
+ 0121                           ENDING:	NEWLINE 
+ 0121  9A 0000 ---- E         1          call procnl
+                                	OUTCH ' ' 
+ 0126  52                     1        push dx
+ 0127  50                     1        push ax
+ 0128  B2 20                  1        mov dl,' '
+ 012A  B4 02                  1        mov ah,2
+ 012C  CD 21                  1        int 21h
+ 012E  58                     1        pop ax
+Microsoft (R) Macro Assembler  Version 4.00                 5/3/6                                                            Page     1-5
+                                                            
+
+ 012F  5A                     1        pop dx
+ 0130  8D 16 0002 R             	LEA DX,T 
+                                	OUTSTR			;распечатка результата 
+ 0134  50                     1         push ax
+ 0135  B4 09                  1         mov ah,9
+ 0137  CD 21                  1         int 21h
+ 0139  58                     1         pop ax
+                                	NEWLINE 
+ 013A  9A 0000 ---- E         1          call procnl
+                                 
+                                	FINISH 
+ 013F  B4 4C                  1         mov ah,4Ch
+ 0141  CD 21                  1         int 21h
+ 0143                           code ends 
+                                 
+                                	END start 
+
+Microsoft (R) Macro Assembler  Version 4.00                 5/3/6                                                            Symbols-1
+                                                             
+
+Macros:
+
+		N a m e			Lines
+
+FINISH . . . . . . . . . . . . .  	   2
+FLUSH  . . . . . . . . . . . . .  	   1
+INCH . . . . . . . . . . . . . .  	  19
+ININT  . . . . . . . . . . . . .  	   9
+NEWLINE  . . . . . . . . . . . .  	   1
+OUTCH  . . . . . . . . . . . . .  	   7
+OUTINT . . . . . . . . . . . . .  	   1
+OUTNUM . . . . . . . . . . . . .  	  22
+OUTSTR . . . . . . . . . . . . .  	   4
+OUTWORD  . . . . . . . . . . . .  	   1
+SAME . . . . . . . . . . . . . .  	   7
+
+Segments and Groups:
+
+                N a m e         	Size	Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	0143	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	00BF	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	008A	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	Value	Attr         
+
+BTS  . . . . . . . . . . . . . .  	N PROC	0000	CODE	Length = 0028
+
+C1 . . . . . . . . . . . . . . .  	L BYTE 	0066	DATA
+C2 . . . . . . . . . . . . . . .  	L BYTE 	0097	DATA
+C3 . . . . . . . . . . . . . . .  	L BYTE 	00AE	DATA
+
+DDL  . . . . . . . . . . . . . .  	N PROC	0028	CODE	Length = 0033
+DELLAT . . . . . . . . . . . . .  	L NEAR	004A	CODE
+
+ENDING . . . . . . . . . . . . .  	L NEAR	0121	CODE
+ENDT . . . . . . . . . . . . . .  	L NEAR	0092	CODE
+
+INT  . . . . . . . . . . . . . .  	L NEAR	0080	CODE
+
+NEXT1  . . . . . . . . . . . . .  	L NEAR	00E0	CODE
+NEXT2  . . . . . . . . . . . . .  	L NEAR	0012	CODE
+NEXT3  . . . . . . . . . . . . .  	L NEAR	003F	CODE
+NOBLAT . . . . . . . . . . . . .  	L NEAR	0022	CODE
+NOLAT  . . . . . . . . . . . . .  	L NEAR	0105	CODE
+NOSLAT . . . . . . . . . . . . .  	L NEAR	00F1	CODE
+NT . . . . . . . . . . . . . . .  	L WORD 	0000	DATA
+
+PRAV1  . . . . . . . . . . . . .  	L NEAR	0116	CODE
+PROCFLUSH  . . . . . . . . . . .  	L FAR 	0000		External
+PROCINCH . . . . . . . . . . . .  	L FAR 	0000		External
+PROCININT  . . . . . . . . . . .  	L FAR 	0000		External
+Microsoft (R) Macro Assembler  Version 4.00                 5/3/6                                                            Symbols-2
+                                                             
+
+PROCNL . . . . . . . . . . . . .  	L FAR 	0000		External
+PROCOUTNUM . . . . . . . . . . .  	L FAR 	0000		External
+
+START  . . . . . . . . . . . . .  	L NEAR	005B	CODE
+
+T  . . . . . . . . . . . . . . .  	L BYTE 	0002	DATA	Length = 0063
+
+YESLAT . . . . . . . . . . . . .  	L NEAR	00FF	CODE
+
+??0000 . . . . . . . . . . . . .  	Number	0001	
+
+
+    367 Source  Lines
+    488 Total   Lines
+     61 Symbols
+
+  49146 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors

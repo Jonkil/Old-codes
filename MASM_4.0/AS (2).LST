@@ -1,0 +1,372 @@
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Page     1-1
+                                                            
+
+                                O:\lang1049\f0 mov AL,[BX]\par 
+as.ASM(43) : error 4: Redefinition of symbol 
+                                
+as.ASM(138) : error 85: End of file, no END directive 
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Page     1-1
+                                                            
+
+                                {\rtf1\ansi\ansicpg1251\deff0\deflang1049{\font
+				tbl{\f0\fswiss\fcharset204{\*\fname Arial;}Aria
+				l CYR;}{\f1\fswiss\fcharset0 Arial;}} 
+as.ASM(1) : error 1: Extra characters on line 
+                                {\*\generator Msftedit 5.41.15.1503;}\viewkind4
+				\uc1\pard\f0\fs20 include io.asm\par 
+as.ASM(2) : error 1: Extra characters on line 
+                                \par 
+as.ASM(3) : error 1: Extra characters on line 
+ 0000                           stack segment stack\par 
+as.ASM(4) : error 10: Syntax error 
+ 0000  008A[                      DB 138 dup(?)\par 
+            ??                  
+                         ]      
+                                
+as.ASM(5) : error 1: Extra characters on line 
+ 008A                           stack ends   \par 
+as.ASM(6) : error 1: Extra characters on line 
+                                \par 
+as.ASM(7) : error 1: Extra characters on line 
+ 0000                           data segment\par 
+as.ASM(8) : error 10: Syntax error 
+ 0000  0064[                       x DB 100 dup(?),'$'\par 
+            ??                  
+                         ]      
+               24               
+as.ASM(9) : error 1: Extra characters on line 
+ 0065  0064[                       y DB 100 dup(?)\par 
+            ??                  
+                         ]      
+                                
+as.ASM(10) : error 1: Extra characters on line 
+                                \lang1033\f1    z DB 100 dup(?)\lang1049\f0\par
+				 
+as.ASM(11) : error 1: Extra characters on line 
+ 00C9  56 56 45 44 49 54 45        b DB 'VVEDITE TEXT NE BOLEE 100 SYMBOLOV!','
+				$'\par 
+       20 54 45 58 54 20 4E     
+       45 20 42 4F 4C 45 45     
+       20 31 30 30 20 53 59     
+       4D 42 4F 4C 4F 56 21     
+       24                       
+as.ASM(12) : error 1: Extra characters on line 
+ 00ED  56 56 45 44 45 4E 4E        a DB 'VVEDENNIY TEXT!!!','$'\par 
+       49 59 20 54 45 58 54     
+       21 21 21 24              
+as.ASM(13) : error 1: Extra characters on line 
+ 00FF  31 24                       c DB '1','$'\par 
+as.ASM(14) : error 1: Extra characters on line 
+ 0101  32 24                       k DB '2','$'\par 
+as.ASM(15) : error 1: Extra characters on line 
+ 0103                           data ends\par 
+as.ASM(16) : error 1: Extra characters on line 
+                                \par 
+as.ASM(17) : error 1: Extra characters on line 
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Page     1-2
+                                                            
+
+ 0000                           code segment\par 
+as.ASM(18) : error 10: Syntax error 
+                                assume ss:stack,ds:data,cs:code\par 
+as.ASM(19) : error 1: Extra characters on line 
+                                \par 
+as.ASM(20) : error 1: Extra characters on line 
+ 0000                           replacement PROC\par 
+as.ASM(21) : error 22: Must be symbol type 
+ 0000  50                        push AX\par 
+as.ASM(22) : error 1: Extra characters on line 
+ 0001  8A 07                     o:mov AL,[BX]\par 
+as.ASM(23) : error 5: Symbol is multi-defined O
+ 0003  3C 31                     CMP AL,'1'\par 
+as.ASM(24) : error 1: Extra characters on line 
+ 0005  72 0E                     JB net;<'1'\par 
+ 0007  3C 39                     CMP AL,'9'\par 
+as.ASM(26) : error 1: Extra characters on line 
+ 0009  77 0A                     JA net;>'9'\par 
+ 000B  2C 30                     SUB AL,'0'\par 
+as.ASM(28) : error 1: Extra characters on line 
+ 000D  04 61                     ADD AL,'a'\par 
+as.ASM(29) : error 1: Extra characters on line 
+ 000F  FE C8                    DEC AL\par 
+as.ASM(30) : error 1: Extra characters on line 
+ 0011  8A E0                     MOV AH,AL\par 
+as.ASM(31) : error 1: Extra characters on line 
+ 0013  88 27                     mov [BX],AH;zamena\par 
+ 0015                            net: \par 
+as.ASM(33) : error 1: Extra characters on line 
+ 0015  43                        INC BX\par 
+as.ASM(34) : error 1: Extra characters on line 
+ 0016  E2 E9                     LOOP o\par 
+as.ASM(35) : error 26: Reference to mult defined 
+ 0018  58                        pop AX\par 
+as.ASM(36) : error 1: Extra characters on line 
+ 0019  C3                        RET\par 
+as.ASM(37) : error 1: Extra characters on line 
+                                replacement ENDP\par 
+as.ASM(38) : error 1: Extra characters on line 
+                                \par 
+as.ASM(39) : error 1: Extra characters on line 
+                                \par 
+as.ASM(40) : error 1: Extra characters on line 
+                                \lang1033\f1 change \lang1049\f0  PROC\par 
+as.ASM(41) : error 1: Extra characters on line 
+ 001A  50                       push AX\lang1033\f1\par 
+as.ASM(42) : error 1: Extra characters on line 
+                                O:\lang1049\f0 mov AL,[BX]\par 
+as.ASM(43) : error 5: Symbol is multi-defined O
+                                \lang1033\f1 cmp AL,'1'\par 
+as.ASM(44) : error 1: Extra characters on line 
+ 001B  72 00                    JB da\par 
+as.ASM(45) : error 9: Symbol not defined DA
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Page     1-3
+                                                            
+
+ 001D  3C 39                    cmp AL,'9'\par 
+as.ASM(46) : error 1: Extra characters on line 
+ 001F  77 00                    JA da\lang1049\f0\par 
+as.ASM(47) : error 9: Symbol not defined DA
+ 0021  88 04                    mov [SI],AL\par 
+as.ASM(48) : error 1: Extra characters on line 
+                                \lang1033\f1 INC SI\par 
+as.ASM(49) : error 1: Extra characters on line 
+ 0023  EB 04 90                 jmp KON\lang1049\f0\par 
+as.ASM(50) : error 1: Extra characters on line 
+                                \lang1033\f1 da:\par 
+as.ASM(51) : error 1: Extra characters on line 
+ 0026  88 05                    mov[DI],AL\par 
+as.ASM(52) : error 1: Extra characters on line 
+ 0028  47                       INC DI\par 
+as.ASM(53) : error 1: Extra characters on line 
+ 0029  43                       KON:INC BX\par 
+as.ASM(54) : error 1: Extra characters on line 
+ 002A  E2 D5                    LOOP O\par 
+as.ASM(55) : error 26: Reference to mult defined 
+                                \lang1049\f0 pop AX\par 
+as.ASM(56) : error 1: Extra characters on line 
+ 002C  C3                        RET\par 
+as.ASM(57) : error 1: Extra characters on line 
+                                \lang1033\f1 change \lang1049\f0  ENDP\par 
+as.ASM(58) : error 1: Extra characters on line 
+                                \par 
+as.ASM(59) : error 1: Extra characters on line 
+ 002D                           out PROC\par 
+as.ASM(60) : error 22: Must be symbol type 
+ 002D  50                       PUSH AX\par 
+as.ASM(61) : error 1: Extra characters on line 
+ 002E  52                       push DX\par 
+as.ASM(62) : error 1: Extra characters on line 
+ 002F  8D 16 00ED R             LEA DX,a\par 
+as.ASM(63) : error 1: Extra characters on line 
+                                OUTSTR\par 
+as.ASM(64) : error 10: Syntax error 
+                                newline\par 
+as.ASM(65) : error 10: Syntax error 
+ 0033  8A 07                    S:MOV AL,[BX]\par 
+as.ASM(66) : error 1: Extra characters on line 
+                                OUTCH AL\par 
+as.ASM(67) : error 10: Syntax error 
+ 0035  43                       INC BX\par 
+as.ASM(68) : error 1: Extra characters on line 
+ 0036  E2 FB                    LOOP S\par 
+as.ASM(69) : error 1: Extra characters on line 
+                                NEWLINE\par 
+as.ASM(70) : error 10: Syntax error 
+ 0038  5A                       pop DX\par 
+as.ASM(71) : error 1: Extra characters on line 
+ 0039  58                       POP AX\par 
+as.ASM(72) : error 1: Extra characters on line 
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Page     1-4
+                                                            
+
+ 003A  C3                       RET\par 
+as.ASM(73) : error 1: Extra characters on line 
+                                out ENDP\par 
+as.ASM(74) : error 1: Extra characters on line 
+                                \par 
+as.ASM(75) : error 1: Extra characters on line 
+                                \par 
+as.ASM(76) : error 1: Extra characters on line 
+                                \par 
+as.ASM(77) : error 1: Extra characters on line 
+ 003B  B8 ---- R                start:   mov AX,data\par 
+as.ASM(78) : error 1: Extra characters on line 
+                                \tab  mov DS,AX\par 
+as.ASM(79) : error 1: Extra characters on line 
+ 003E  8D 16 00C9 R                 LEA DX,b\par 
+as.ASM(80) : error 1: Extra characters on line 
+                                    OUTSTR \par 
+as.ASM(81) : error 10: Syntax error 
+                                    newline\par 
+as.ASM(82) : error 10: Syntax error 
+ 0042  B9 0064                      mov CX,100\par 
+as.ASM(83) : error 1: Extra characters on line 
+ 0045  BB 0000                      mov BX,0\par 
+as.ASM(84) : error 1: Extra characters on line 
+ 0048  BA 0000                      mov DX,0\par 
+as.ASM(85) : error 1: Extra characters on line 
+ 004B                               m:inch AL\par 
+as.ASM(86) : error 10: Syntax error 
+ 004B  3C 2E                        CMP AL,'.'\par 
+as.ASM(87) : error 1: Extra characters on line 
+ 004D  74 08                        JE h\par 
+as.ASM(88) : error 1: Extra characters on line 
+ 004F  88 87 0000 R                 mov x[BX],AL\par 
+as.ASM(89) : error 1: Extra characters on line 
+ 0053  43                           INC BX\par 
+as.ASM(90) : error 1: Extra characters on line 
+ 0054  42                           INC DX\par 
+as.ASM(91) : error 1: Extra characters on line 
+ 0055  E2 F4                        LOOP m\par 
+as.ASM(92) : error 1: Extra characters on line 
+ 0057  8B CA                        h:MOV CX,DX\par 
+as.ASM(93) : error 1: Extra characters on line 
+ 0059  8D 1E 0000 R                 LEA BX,x\par 
+as.ASM(94) : error 1: Extra characters on line 
+ 005D  E8 002D R                    call out\par 
+as.ASM(95) : error 1: Extra characters on line 
+                                \par 
+as.ASM(96) : error 1: Extra characters on line 
+ 0060  8B CA                        mov CX,DX\par 
+as.ASM(97) : error 1: Extra characters on line 
+                                \lang1033\f1 dec CX\par 
+as.ASM(98) : error 1: Extra characters on line 
+                                \lang1049\f0 mov AL,x[\lang1033\f1 CX\lang1049\
+				f0 ]\par 
+as.ASM(99) : error 1: Extra characters on line 
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Page     1-5
+                                                            
+
+ 0062  3C 00                        cmp AL,'\lang1033\f1 A\lang1049\f0 '\par 
+as.ASM(100) : error 10: Syntax error 
+ 0064  72 00                        JB t;<\par 
+as.ASM(101) : error 9: Symbol not defined T
+ 0066  3C 00                        CMP AL,'\lang1033\f1 Z\lang1049\f0 '\par 
+as.ASM(102) : error 10: Syntax error 
+ 0068  77 00                        JA t;>\par 
+as.ASM(103) : error 9: Symbol not defined T
+                                    \lang1033\f1 mov CX,DX\par 
+as.ASM(104) : error 1: Extra characters on line 
+ 006A  BB 0000                      mov BX,0\lang1049\f0\par 
+as.ASM(105) : error 1: Extra characters on line 
+                                \lang1033\f1     M:cmp AL,x[BX]\par 
+as.ASM(106) : error 1: Extra characters on line 
+ 006D  75 00                        JNE t\par 
+as.ASM(107) : error 9: Symbol not defined T
+ 006F  43                           INC BX \par 
+as.ASM(108) : error 1: Extra characters on line 
+ 0070  E2 D9                        LOOP M\lang1049\f0\par 
+as.ASM(109) : error 1: Extra characters on line 
+                                    OUTCH c\par 
+as.ASM(110) : error 10: Syntax error 
+                                    newline\par 
+as.ASM(111) : error 10: Syntax error 
+ 0072  8B CA                        mov CX,DX\par 
+as.ASM(112) : error 1: Extra characters on line 
+ 0074  8D 1E 0000 R                 LEA BX,x\par 
+as.ASM(113) : error 1: Extra characters on line 
+ 0078  E8 0000 R                    call replacement\par 
+as.ASM(114) : error 1: Extra characters on line 
+ 007B  8B CA                        MOV CX,DX    \par 
+as.ASM(115) : error 1: Extra characters on line 
+ 007D  8D 1E 0000 R                 LEA BX,x\par 
+as.ASM(116) : error 1: Extra characters on line 
+ 0081  E8 002D R                    call out\par 
+as.ASM(117) : error 1: Extra characters on line 
+ 0084  E9 0000 U                    JMP en\par 
+as.ASM(118) : error 9: Symbol not defined EN
+                                \lang1033\f1 t:\lang1049\f0 OUTCH k\par 
+as.ASM(119) : error 1: Extra characters on line 
+                                    newline\par 
+as.ASM(120) : error 10: Syntax error 
+ 0087  8B CA                        mov CX,DX\par 
+as.ASM(121) : error 1: Extra characters on line 
+ 0089  BB 0000 R                    mov BX,offset x\par 
+as.ASM(122) : error 1: Extra characters on line 
+ 008C  BE 0065 R                    mov SI,offset y\par 
+as.ASM(123) : error 1: Extra characters on line 
+                                   \lang1033\f1  mov DI,offset z\par 
+as.ASM(124) : error 1: Extra characters on line 
+                                \lang1049\f0  call \lang1033\f1 change\lang1049
+				\f0\par 
+as.ASM(125) : error 1: Extra characters on line 
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Page     1-6
+                                                            
+
+ 008F  8B CA                        MOV CX,DX\par 
+as.ASM(126) : error 1: Extra characters on line 
+ 0091  8D 1E 0065 R                 LEA BX,y\par 
+as.ASM(127) : error 1: Extra characters on line 
+ 0095  E8 002D R                    call out\par 
+as.ASM(128) : error 1: Extra characters on line 
+                                \lang1033\f1    MOV CX,DX\par 
+as.ASM(129) : error 1: Extra characters on line 
+ 0098  8D 1E 0000 U                LEA BX,z\par 
+as.ASM(130) : error 9: Symbol not defined Z
+ 009C  E8 002D R                    call out\lang1049\f0\par 
+as.ASM(131) : error 1: Extra characters on line 
+                                 \lang1033\f1 en:\lang1049\f0  FINISH\par 
+as.ASM(132) : error 1: Extra characters on line 
+ 009F                           code ends\par 
+as.ASM(133) : error 1: Extra characters on line 
+                                \par 
+as.ASM(134) : error 1: Extra characters on line 
+                                \tab END start\par 
+as.ASM(135) : error 1: Extra characters on line 
+                                \lang1033\f1 end\lang1049\f0   \par 
+as.ASM(136) : error 1: Extra characters on line 
+                                } 
+as.ASM(137) : error 1: Extra characters on line 
+                                
+as.ASM(138) : error 85: End of file, no END directive 
+Microsoft (R) Macro Assembler  Version 4.00                 5/16/7                                                            Symbols-1
+                                                             
+
+Segments and Groups:
+
+                N a m e         	Size	Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	009F	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	0103	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	008A	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	Value	Attr         
+
+A  . . . . . . . . . . . . . . .  	L BYTE 	00ED	DATA
+
+B  . . . . . . . . . . . . . . .  	L BYTE 	00C9	DATA
+
+C  . . . . . . . . . . . . . . .  	L BYTE 	00FF	DATA
+
+H  . . . . . . . . . . . . . . .  	L NEAR	0057	CODE
+
+K  . . . . . . . . . . . . . . .  	L BYTE 	0101	DATA
+KON  . . . . . . . . . . . . . .  	L NEAR	0029	CODE
+
+M  . . . . . . . . . . . . . . .  	L NEAR	004B	CODE
+
+NET  . . . . . . . . . . . . . .  	L NEAR	0015	CODE
+
+O  . . . . . . . . . . . . . . .  	L NEAR	0001	CODE
+OUT  . . . . . . . . . . . . . .  	N PROC	002D	CODE	Length = 000E
+
+REPLACEMENT  . . . . . . . . . .  	N PROC	0000	CODE	Length = 001A
+
+S  . . . . . . . . . . . . . . .  	L NEAR	0033	CODE
+START  . . . . . . . . . . . . .  	L NEAR	003B	CODE
+
+X  . . . . . . . . . . . . . . .  	L BYTE 	0000	DATA	Length = 0064
+
+Y  . . . . . . . . . . . . . . .  	L BYTE 	0065	DATA	Length = 0064
+
+
+    137 Source  Lines
+    138 Total   Lines
+     39 Symbols
+
+  49238 Bytes symbol space free
+
+    107 Warning Errors
+     30 Severe  Errors

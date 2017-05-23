@@ -1,0 +1,544 @@
+/* Instruction. To run this program under UNIX you should :  */
+/* - remove all the double slashes you can find 	     */
+/* - remove all non-remarked commands in the main function   */
+/* - remove the printing (opt. )& returning commands in the sql.c/SSend function */
+/* - remove the remarks near the strstr in server.h	     */
+/*  If you have some troubles please call the AMC	     */
+
+/* INCLUDE , SSEND*/
+/* A chto delatx s erse i DBMS[i] */
+/* clear the string in main before iteration */
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#include "sql.h"
+#include "utils.h"
+#include "server.h"
+
+#define ADDRESS "mysocket"
+
+struct DB *DBMS[MAX_DB_NUMBER];
+int Free=0,Curr=0;
+enum GetTypes GetType=BOOL;
+int ns;
+FILE* fd;
+
+int SSend(char *s) {
+	if(s!=NULL)
+		return send(ns,s,strlen(s),0);
+}
+
+int Create(char *s) {  /* Creates the DB using the common string */
+struct DB* tmp;
+struct Fields add[MAX_FIELDS_NUMBER];
+int n,i=0,j;
+char *name; 
+char *t,*t1;
+int result=0;
+FILE *file;
+	Curr=0;
+	if(Free>=MAX_DB_NUMBER) {
+		Error("Internal error : Can't add any more databases");
+		return ERROR;
+		}
+	name=GetNextLex(s);
+	if(strlen(name)>MAX_DB_NAME_LENGTH) {
+		Error("User error : DB name length is too long");
+		return ERROR;
+		}
+	if(!(fopen(name,"r")==NULL)) {
+		Error("User error : such file is already exist");
+		return ERROR;
+		}
+	if(strcmp(GetNextLex(s),"(")) {
+		Error("Can't find DB fields specification");
+		return -1;
+		}
+	while(strcmp(t1=GetNextLex(s),")")) {
+		if((result=IsIdent(t1))!=YES) {
+			Error("User error : illegal identifier in CREATE");
+			return -1;
+			}
+		if(result==-1)
+			return -1;
+		strcpy(add[i].Name,t1);
+		printf(" Finding the fields types : %s \n",s+Curr);
+		if(strcmp(GetNextLex(s),":")) {
+			Error("Can't find type in DB fields specification");
+			return -1;
+			}
+		if((result=IsType(t1=GetNextLex(s)))!=YES) {
+			Error("User error : not an allowed type name in CREATE");
+			return -1;
+			}
+		if (result==-1)
+			return -1;
+		strcpy(add[i].Type,t1);
+		i++;
+		if(strcmp(t1=GetNextLex(s),","))
+			Curr--;
+		}
+	AddFields(tmp=OpenDB(name,1),i,add);
+	DBMS[++Free]=tmp;
+	printf("DBMS : %d,%s",Free,DBMS[Free]->Name);
+	return Free;
+}
+
+int Insert(char *s,struct DB* tmp) {
+char *t,*t1,*t2;
+int i;
+int test;
+	Curr=0;
+	ClearWorkBuf(tmp);
+	for(i=0;i<tmp->Number;i++) {
+		t=GetNextLex(s);
+		if(strcmp(t1=GetNextLex(s),",") && *t1) {
+			Error("User error : can't find the next field");
+			return ERROR;
+			}
+		if(!strcmp(tmp->Structure[i].Type,"LONG")) {
+			if(!IsNumber(t)) {
+				Error("User error : incompartible types in INSERT");
+				return -1;
+				}
+			PutField(tmp,tmp->Structure[i].Name,t2=AlignLong(t));
+			}
+		if(strstr(tmp->Structure[i].Type,"STRING")!=NULL) {
+			if(!IsString(t)) {
+				Error("User error : incompartible types in INSERT");
+				return -1;
+				}
+			t[strlen(t)-1]=0;
+			if((test=Size(tmp->Structure[i].Type))<strlen(t)-1) {
+				Error("Warning : your string was cuted");
+				t[test+1]=0;
+				}
+			PutField(tmp,tmp->Structure[i].Name,t+1);
+			}
+		}
+	return 0;
+}
+
+char *itoa(int a) {
+	if (a==1)
+		return "1";
+	else 
+		return "0";
+}
+
+int Where(char *s,struct DB *tmp) {  /* Checks the where using the common string */
+int c,c1;
+char *t,*t1,*t2,*tt;
+	Curr=0;
+	tt=(char*)strdup(s);
+	if (!strcmp(s,""))
+		return YES;
+	while((c=GetLex("(",s))!=-1) {
+		c1=GetLex(")",s+c+strlen(")"));
+		if(c1<0) {
+			Error("User error : check for parses");
+			return ERROR;
+			}
+		t1=(char*)strdup(s);
+		t2=(char*)strdup(s+c1+c+1);
+		strcat(t1,itoa(Where(s+c+1,tmp)));
+		s=tt;
+		return Where(strcat(t1,t2),tmp);
+		}
+	while((c=GetLex("OR",s))!=-1)
+		return Where(s,tmp) || Where(s+c+strlen("OR"),tmp);
+	while((c=GetLex("AND",s))!=-1)
+		return Where(s,tmp) && Where(s+c+strlen("AND"),tmp);
+	while((c=GetLex("NOT LIKE",s))!=-1) {
+		t1=GetValue(s+c+strlen("NOT LIKE"),tmp);
+		if (GetType!=STRING) {
+			Error("Invalid type 1 in NOT LIKE");
+			return -1;
+			}
+		if (t1==NULL)
+			return -1;
+		t=GetValue(s,tmp);
+		if (GetType!=STRING) {
+			Error("Invalid type 2 in NOT LIKE");
+			return -1;
+			}
+		if (t==NULL)
+			return -1;
+		return !WildCmp(ToUpper(t1),t);
+		}
+	while((c=GetLex("NOT",s))!=-1)
+		return !Where(s+c+strlen("NOT"),tmp);
+	while((c=GetLex("LIKE",s))!=-1) {
+		t1=GetValue(s+c+strlen("LIKE"),tmp);
+		if (GetType!=STRING) {
+			Error("Invalid type 1 in LIKE");
+			return -1;
+			}
+		if (t1==NULL)
+			return -1;
+		t=GetValue(s,tmp);
+		if (GetType!=STRING) {
+			Error("Invalid type 1 in LIKE");
+			return -1;
+			}
+		if (t==NULL)
+			return -1;
+		return WildCmp(ToUpper(t1),t);
+		}
+	while((c=GetLex("<=",s))!=-1)
+		{
+		t1=GetValue(s,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		Curr+=2;
+		t2=GetValue(s+c+2,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		return (strcmp(t1,t2)<=0);
+		}
+	while((c=GetLex(">=",s))!=-1)
+		{
+		t1=GetValue(s,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		Curr+=2;
+		t2=GetValue(s+c+2,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		return (strcmp(t1,t2)>=0);
+		}
+	while((c=GetLex("!=",s))!=-1)
+		{
+		t1=GetValue(s,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		Curr+=2;
+		t2=GetValue(s+c+2,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		return (strcmp(t1,t2)!=0);
+		}
+	while((c=GetLex("<",s))!=-1)
+		{
+		t1=GetValue(s,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		Curr++;
+		t2=GetValue(s+c+1,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		return (strcmp(t1,t2)<0);
+		}
+	while((c=GetLex(">",s))!=-1)
+		{
+		t1=GetValue(s,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		Curr++;
+		t2=GetValue(s+c+1,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		return (strcmp(t1,t2)>0);
+		}
+	while((c=GetLex("=",s))!=-1)
+		{
+		t1=GetValue(s,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		Curr++;
+		t2=GetValue(s+c+1,tmp);
+		if (GetType!=LONG) {
+			Error("User error : incompartible types in WHERE");
+			return -1;
+			}
+		return (strcmp(t1,t2)==0);
+		}
+	free(tt);
+	return atoi(GetValue(s,tmp));
+	Error("User error : illegal syntax in WHERE");
+	return -1;
+}
+
+int Update(char *s,struct DB* tmp) {
+char *t,*t1,*t2;
+int curr=Curr,curr1;
+	printf("Updating the %s\n",s);
+	Curr=0;
+	while(strcmp(t=GetNextLex(s),"")) {
+		if(!IsField(t,tmp)) {
+			Error("User error : no such field name in UPDATE");
+			return ERROR;
+			}
+		if(strcmp(GetNextLex(s),"=")) {
+			Error("User error : right side is absent in UPDATE");
+			return ERROR;
+			}
+		t2=GetNextLex(s);
+		curr1=Curr;
+		Curr=0;
+		t1=GetValue(t2,tmp);
+		if(t1==NULL)
+			return ERROR;
+		if(GetDBType(t,tmp)!=GetType) {
+			Error("User error : incompartible types in update.");
+			return ERROR;
+			}
+		PutField(tmp,t,t1);
+		Curr=curr1;
+		}
+	Curr=curr;
+	WriteToFile(tmp,CURRENT,-1);
+	fclose(tmp->Source);
+	tmp->Source=fopen(tmp->Name,"ab+");
+	lseek(tmp->Source,tmp->Psp,BEGIN);
+	return 0;
+}
+
+int SQL(char *s) {
+char *forwhere,*forverb,*forfrom,*t,*tosave,*t1;
+int Ok=NO,counter=0,test,i,curr;
+struct DB *tmp;
+	printf("Received : #%s#\n",s);
+	Curr=0;
+	s=ToUpper(s);
+	t=GetNextLex(s);
+	s+=Curr;
+	Curr=0;
+	if(!strcmp(t,"SELECT")) {
+		printf("Selecting\n");
+		if(strstr(s,"WHERE")==NULL)
+			forwhere="";
+		else
+			forwhere=s+GetLex("WHERE",s)+strlen("WHERE")+1;
+		if(strstr(s,"FROM")==NULL) {
+			Error("User error : FROM required");
+			return ERROR;
+			}
+		forfrom=s+GetLex("FROM",s)+strlen("FROM")+1;
+		forverb=s;
+		tosave=(char*)calloc(strlen(forwhere)+1,1);
+		strcpy(tosave,forwhere);
+		printf("Sele1 \n");
+		while(strcmp(t=GetNextLex(forfrom),"")) {
+			counter=0;
+			tmp=GetDB(t);
+			fseek(tmp->Source,tmp->Psp,BEGIN);
+			fgetc(tmp->Source);
+			curr=Curr;
+			while(!feof(tmp->Source)) {
+				printf("sele2 ,%d, %s\n",counter,tmp->Name);
+				ReadFromFile(tmp,BEGIN,counter++);
+				PrintWorkBuf(tmp);
+				strcpy(forwhere,tosave);
+				test=Where(forwhere,tmp);
+				if(test==YES)
+					if(SSend(t1=Format(tmp,forverb))==ERROR) {
+						Error("Internal error : can't send the message");
+						return ERROR;
+						}
+					if(t1==NULL)
+						return ERROR;
+				if(test==ERROR)
+					return -1;
+				fgetc(tmp->Source);
+				}
+			Curr=curr;
+			}
+		Ok=YES;
+		}
+	if(!strcmp(t,"UPDATE")) {
+		if(strstr(s,"WHERE")==NULL)
+			forwhere="";
+		else
+			forwhere=s+GetLex("WHERE",s)+strlen("WHERE")+1;
+		if(strstr(s,"SET")==NULL) {
+			Error("User error : SET required");
+			return ERROR;
+			}
+		forfrom=s+GetLex("SET",s)+strlen("SET")+1;
+		forverb=s;
+		tosave=(char*)calloc(strlen(forwhere)+1,1);
+		strcpy(tosave,forwhere);
+		while(strcmp(t=GetNextLex(forverb),"")) {
+			counter=0;
+			tmp=GetDB(t);
+			fseek(tmp->Source,tmp->Psp,BEGIN);
+			fgetc(tmp->Source);
+			curr=Curr;
+			while(!feof(tmp->Source)) {
+				ReadFromFile(tmp,BEGIN,counter++);
+				strcpy(forwhere,tosave);
+				test=Where(forwhere,tmp);
+				if(test==YES)
+					if(Update(forfrom,tmp)==ERROR)
+						return ERROR;
+				if(test==ERROR)
+					return ERROR;
+				fgetc(tmp->Source);
+				}
+			Curr=curr;
+			}
+		Ok=YES;
+		}
+	if(!strcmp(t,"DELETE")) {
+		Curr=0;
+		if(strstr(s,"WHERE")==NULL)
+			forwhere="";
+		else
+			forwhere=s+GetLex("WHERE",s)+strlen("WHERE")+1;
+		forverb=s;
+		tosave=(char*)calloc(strlen(forwhere)+1,1);
+		strcpy(tosave,forwhere);
+		while(strcmp(t=GetNextLex(forverb),"")) {
+			counter=0;
+			tmp=GetDB(t);
+			fseek(tmp->Source,tmp->Psp,BEGIN);
+			fgetc(tmp->Source);
+			curr=Curr;
+			while(!feof(tmp->Source)) {
+				ReadFromFile(tmp,BEGIN,counter++);
+				strcpy(forwhere,tosave);
+				test=Where(forwhere,tmp);
+				if(test==YES) {
+					ClearWorkBuf(tmp);
+					WriteToFile(tmp,CURRENT,-1);
+					fclose(tmp->Source);
+					tmp->Source=fopen(tmp->Name,"ab+");
+					lseek(tmp->Source,tmp->Psp,BEGIN);
+					}
+				if(test==ERROR)
+					return -1;
+				fgetc(tmp->Source);
+				}
+			Curr=curr;
+			};
+		Ok=YES;
+		}
+	if(!strcmp(t,"ERASE")) {
+		Curr=0;
+		while(strcmp(t=GetNextLex(s),"")) {
+			printf("Deleting: #%s# \n",t);
+			DeleteDB(t);
+			}
+		Ok=YES;
+		}
+
+	if(!strcmp(t,"INSERT")) {
+		if(strcmp(GetNextLex(s),"INTO")){
+			Error("User error : can't find INTO command verb");
+			return ERROR;
+			}
+		tmp=GetDB(GetNextLex(s));
+		if(tmp==NULL) {
+			Error("User error : such DB not found");
+			return ERROR;
+			}
+		if(strcmp(GetNextLex(s),":")) {	/* You can insert SELECT here */
+			Error("User error : can't find the : in INSERT");
+			return ERROR;
+			}
+		if(Insert(s+Curr,tmp)==ERROR)
+			return ERROR;
+		WriteToFile(tmp,END,0);
+		Ok=YES;
+		}
+	if(!strcmp(t,"CREATE")) {
+		if(Create(ToUpper(s))==ERROR)
+			return ERROR;
+		Ok=YES;
+		}
+	if(!strcmp(t,"SHUTDOWN") || !strcmp(t,"SD")) {
+		printf("Shutdowning %d DB's\n",Free);
+		for(i=1;i<Free;i++) {
+			printf("Closing %s\n",DBMS[i]->Name);
+			fclose(DBMS[i]->Source);
+			free(DBMS[i]->WorkBuf);
+			}
+		Error("Message : server was shuted down");
+		return 1;
+		}
+	if(Ok)
+		return 0;
+	Error("User error : unrecognized command verb");
+	return -1;
+}
+
+main() {
+char c;
+FILE *fd;
+int fromlen;
+int i,s,len,status=0,j;
+char *string;
+struct sockaddr_un saun,fsaun;
+	ClrScr();
+	string=(char*)calloc(1,MAX_MSG_LENGTH+1);
+	if ((s=socket(PF_UNIX,SOCK_STREAM,0))<0) {
+		perror(" Server : socket");
+		exit(1);
+		};
+	saun.sun_family=AF_UNIX;
+	strcpy(saun.sun_path,ADDRESS);
+	unlink(ADDRESS);
+	len=sizeof(saun.sun_family)+strlen(saun.sun_path);
+	if (bind(s,&saun,len)<0) {
+		perror(" Server : bind");
+		exit(1);
+	};
+	if (listen(s,5)<0) {
+		perror(" Server : listen");
+		exit(1);
+	};
+	if ((ns=accept(s,&saun,&fromlen))<0) {
+		perror(" Server : accept");
+		exit(1);
+	};
+	fd=fdopen(ns,"r");
+	while(TRUE) {
+		for(i=0;i<MAX_MSG_LENGTH;i++)
+			string[i]='\0';
+		i=0;
+		printf(" Ready to the next query \n");
+		while ((unsigned char)(string[i++]=fgetc(fd))!=(unsigned char)255)
+			if (string[i-1]=='@') {
+				string[i-1]=0;
+				break;
+			}
+		status=SQL(string);
+		SSend("@");
+		if(status==ERROR);
+		if(status==1)
+			return 1;
+		if(status==0);
+		}
+	return 0;
+	free(string);
+	close(s);
+}
+
+

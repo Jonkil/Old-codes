@@ -1,0 +1,27 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: pr2 - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\Asem\LOCALS~1\Temp\RSP6.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"Debug/pr2.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"C:\Documents and Settings\Asem\Рабочий стол\2_программа\pr2.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\Asem\LOCALS~1\Temp\RSP6.tmp" 
+<h3>Output Window</h3>
+Compiling...
+pr2.cpp
+C:\Documents and Settings\Asem\Рабочий стол\2_программа\pr2.cpp(774) : fatal error C1075: end of file found before the left brace '{' at 'C:\Documents and Settings\Asem\Рабочий стол\2_программа\pr2.cpp(429)' was matched
+Error executing cl.exe.
+
+
+
+<h3>Results</h3>
+pr2.obj - 1 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

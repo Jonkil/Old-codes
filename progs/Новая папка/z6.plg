@@ -1,0 +1,27 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: z6 - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\Jonkil\LOCALS~1\Temp\RSP2E.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"Debug/z6.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"C:\Documents and Settings\Jonkil\Мои документы\z61.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\Jonkil\LOCALS~1\Temp\RSP2E.tmp" 
+<h3>Output Window</h3>
+Compiling...
+z61.cpp
+C:\Documents and Settings\Jonkil\Мои документы\z61.cpp(16) : warning C4551: function call missing argument list
+C:\Documents and Settings\Jonkil\Мои документы\z61.cpp(17) : warning C4551: function call missing argument list
+
+
+
+<h3>Results</h3>
+z61.obj - 0 error(s), 2 warning(s)
+</pre>
+</body>
+</html>

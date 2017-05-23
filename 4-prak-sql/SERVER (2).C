@@ -1,0 +1,309 @@
+/* Change the default string length to 255 */
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+/*#include <sys/stat.h>*/
+
+#include "utils.h"
+#include "server.h"
+#include "sql.h"
+/* DB Working functions ---------------------------------------------------- */
+
+struct DB* OpenDB(char *name,int f) {/* Opens DB file without any changing the fields*/
+struct DB *tmp;				/* f means that file creates(1) or opens (2) */
+int i,j;
+char t[MAX_TYPE_NAME_LENGTH];
+char test;
+char *n;
+	printf("Test 1\n");
+	tmp=(struct DB*)malloc(sizeof(struct DB));
+	n=(char*)calloc(MAX_FIELD_NAME_LENGTH,1);
+	tmp->Name=name;
+	if((tmp->Source=fopen(tmp->Name,"r"))==NULL) {
+		if(!f) {
+			Error("Can't find such file");
+			return NULL;
+			}
+		printf("Test 2\n");
+		tmp->Modifiable=TRUE;
+		fclose(tmp->Source);
+		tmp->Source=fopen(tmp->Name,"w+b");
+		tmp->Number=0;
+		tmp->Structure=NULL;
+		tmp->FullSize=0;
+		tmp->WorkBuf=NULL;
+		tmp->Curr=0;
+		tmp->Psp=1;
+		}
+	else {
+		printf("Test 3\n");
+		fclose(tmp->Source);
+		tmp->Source=fopen(tmp->Name,"ab+");
+		fseek(tmp->Source,0,BEGIN);
+		tmp->Modifiable=FALSE;
+		tmp->Number=fgetc(tmp->Source);                                                 /* --> */
+		tmp->Psp=1;
+		tmp->FullSize=0;
+		tmp->Structure=(struct Fields*)\
+			calloc(sizeof(struct Fields),tmp->Number);
+		printf("Test 4 \n");
+		for(i=0;i<tmp->Number;i++){
+			for(j=0;j<MAX_FIELD_NAME_LENGTH;j++)
+				t[j]=0;
+			j=0;
+			while(t[j++]=getc(tmp->Source));
+			for(j=0;j<MAX_FIELD_NAME_LENGTH;j++)
+				n[j]=0;
+			j=0;
+			while(n[j++]=getc(tmp->Source));
+			strcpy(tmp->Structure[i].Type,t);                            
+			strcpy(tmp->Structure[i].Name,n);
+ 			tmp->Psp+=(strlen(t)+strlen(n)+2); /* type+len+/0 */
+			tmp->FullSize+=Size(tmp->Structure[i].Type);
+			};
+		printf("Test 5 , %d\n",tmp->FullSize);
+		tmp->WorkBuf=(char*)calloc(tmp->FullSize,1);
+		tmp->Curr=0;
+		};
+	free(n);
+	printf(" Created :\n");
+	printf("               Naumber:%d\n",tmp->Number);
+	printf("               Psp:%d",tmp->Psp);
+	printf("               FullS :%d\n",tmp->FullSize);
+	printf("               WB: %s\n",tmp->WorkBuf);
+	printf("               Fields: \n");
+	for (i=0;i<tmp->Number;i++)
+		printf("%s - %s\n",tmp->Structure[i].Name,tmp->Structure[i].Type);
+	return tmp;
+}
+
+int AddFields(struct DB* tmp,int n,struct Fields *f) {/* Add the fields*/
+int i;
+	if(!tmp->Modifiable)
+		return -1;
+	tmp->Modifiable=FALSE;
+	tmp->Number=n;
+	printf("Number of fields : %d \n",n);
+	fputc(tmp->Number,tmp->Source); 			/*  <-- */
+	printf("<%c> ",tmp->Number+'0');
+	tmp->Psp=1;
+	tmp->Structure=(struct Fields*)\
+		calloc(sizeof(struct Fields),tmp->Number);
+	for(i=0;i<tmp->Number;i++) {
+		fprintf(tmp->Source,"%s",ToUpper(f[i].Type));    	 /* <-- */
+		fputc('\0',tmp->Source);                                                              /* <-- */
+		fprintf(tmp->Source,"%s",ToUpper(f[i].Name));                          /* <-- */
+		fputc('\0',tmp->Source);                                                            /* <-- */
+		strcpy(tmp->Structure[i].Type,ToUpper(f[i].Type));
+		strcpy(tmp->Structure[i].Name,ToUpper(f[i].Name));
+		tmp->Psp+=(strlen(f[i].Type)+strlen(f[i].Name)+2); /* type+len+"/0" */
+		tmp->FullSize+=Size(tmp->Structure[i].Type);
+		};
+	tmp->WorkBuf=(char*)malloc(tmp->FullSize);
+	tmp->Curr=0;
+	printf(" Created :\n");
+	printf("               Naumber:%d\n",tmp->Number);
+	printf("               Psp:%d",tmp->Psp);
+	printf("               FullS :%d\n",tmp->FullSize);
+	return 0;
+}
+
+
+void CloseDB(struct DB *tmp) { /* Closes the DataBase file */
+	fclose(tmp->Source);
+	free(tmp->Structure);
+	free(tmp);
+}
+
+int WriteToFile(struct DB *tmp,enum Whence t,int o) { /* Writes the Working buffer to the DtaBase file */
+int i=0;
+	if(t==BEGIN)
+		i=tmp->Psp;
+	if(fseek(tmp->Source,o*tmp->FullSize+i,t))
+		return -1;
+	for(i=0;i<tmp->FullSize;i++)
+		fputc((char)tmp->WorkBuf[i],tmp->Source);
+	return 0;
+}
+
+int ReadFromFile(struct DB *tmp,enum Whence t,int o) { /* Reads the record from the DB file */
+int i=0,c;
+	printf("File contains :\n");
+	fseek(tmp->Source,0,BEGIN);
+	while(!feof(tmp->Source))
+		printf("%c",fgetc(tmp->Source));
+	if(t==BEGIN)
+		i=tmp->Psp;
+	printf("Fseek %d\n",tmp->FullSize);
+	PrintWorkBuf(tmp);
+	if(fseek(tmp->Source,o*tmp->FullSize+i,t))
+		return -1;
+	printf("reading %d\n",o*tmp->FullSize+i);
+	for(i=0;i<tmp->FullSize;i++) {
+		printf("Reading : %d-%c\n",i,c=fgetc(tmp->Source));
+		tmp->WorkBuf[i]=c;
+		printf("Pushed as %d,%c\n",i,tmp->WorkBuf[i]);
+		};
+	printf("Readed");
+	PrintWorkBuf(tmp);
+	return 0;
+}
+
+char* GetField(struct DB *tmp,char* f) { /* Gets the field containing */
+char *t,*c=tmp->WorkBuf;
+int i;
+	f=ToUpper(f);
+	for(i=0;i<tmp->Number;i++) {
+		if (!strcmp(tmp->Structure[i].Name,f)) {
+			t=(char*)calloc(Size(tmp->Structure[i].Type)+1,1);
+			charncpy(c,t,Size(tmp->Structure[i].Type));
+			return t;
+			}
+		c+=Size(tmp->Structure[i].Type);
+		}
+	return NULL;
+}
+
+void ClearWorkBuf(struct DB *tmp) {
+int i;
+	for(i=0;i<tmp->FullSize;i++)
+		tmp->WorkBuf[i]='\0';
+}
+
+void PutField(struct DB *tmp,char* f,char* t) { /* DBname,FieldName,What */
+int tmp1=0,i,j;
+	f=ToUpper(f);
+	for(i=0;i<tmp->Number;i++) {
+		if (!strcmp(tmp->Structure[i].Name,f)) {
+			for(j=tmp1;j<Size(tmp->Structure[i].Type)+tmp1;j++)
+				tmp->WorkBuf[j]=0;
+			for(j=0;j<strlen(t);j++)
+				tmp->WorkBuf[j+tmp1]=t[j];
+			return;
+			}
+		tmp1+=Size(tmp->Structure[i].Type);
+		}
+}
+
+void PrintWorkBuf(struct DB *tmp) { /* Saves the working buffer */
+int i;
+	for(i=0;i<tmp->FullSize;i++)
+		putchar(tmp->WorkBuf[i]);
+}
+
+void DeleteDB(char *n) { /* Erases the file that contains the DataBase */
+	unlink(n);
+}
+
+enum GetTypes GetDBType(char *f,struct DB* tmp) {
+int i;
+	for(i=0;i<tmp->Number;i++)
+		if (!strcmp(tmp->Structure[i].Name,f)) {
+			if(strstr(tmp->Structure[i].Type,"STRING"))
+				return STRING;
+			if(!strcmp(tmp->Structure[i].Type,"LONG"))
+				return LONG;
+			}
+	return -1;
+}
+
+char* GetValue(char *a,struct DB* tmp) {  /* It gets value of colomn, constant or number */
+char *t,*s=a;
+int curr=Curr;
+	Curr=0;
+	t=Trim(a);
+	if(*t=='\"') {	/* String constant */
+		t[strlen(t)-1]=0;
+		GetType=STRING;
+		Curr=curr;
+		return t+1;
+		}
+	if(isdigit(*t)) {
+		printf("Getting value from the #%s#\n",t);
+		s=t;
+		while(isdigit(*(s++)) && *s); 	/* Integer constant aligned to Size(Long)*/
+		if(!(*s)) {
+			GetType=LONG;
+			Curr=curr;
+			return AlignLong(t);
+			}
+		else {
+			Error("Identifier name must begins with a letter");
+			Curr=curr;
+			return NULL;
+			}
+		}
+	if((s=GetField(tmp,t))!=NULL) {/* Colomn name*/
+		GetType=GetDBType(t,tmp);
+		Curr=curr;
+		return ToUpper(s);
+		}
+	Error("Can't find such colomn in Whence");
+	return NULL;
+}
+
+struct DB *GetDB(char *s) {    /* Gets a DB* from the DBMS by the name */
+int i;
+struct DB *tmp;
+	s=ToUpper(Trim(s));
+	for(i=1;i<=Free;i++) {
+		if(!strcmp(DBMS[i]->Name,s))
+			return DBMS[i];
+		}
+	tmp=OpenDB(s,0);
+	if(tmp!=NULL) {
+		DBMS[++Free]=tmp;
+		return tmp;
+		}
+	return NULL;
+}
+
+char* Format(struct DB* tmp,char *f) {
+int i,c=0,t=0,curr;
+char *s,*s1;
+	if(!*tmp->WorkBuf)
+		return "";
+	curr=Curr;Curr=0;
+	s=(char*)calloc(tmp->FullSize+tmp->Number+1,1);
+	s1=(char*)calloc(tmp->FullSize+tmp->Number+1,1);
+	s[c++]='|';
+	s[c++]=' ';
+	for(i=0;i<tmp->Number;i++)
+		if(!strcmp(s1=GetNextLex(f),tmp->Structure[i].Name)) {
+			if(strstr(tmp->Structure[i].Type,"STRING")) {
+				strcpy(s+c,GetField(tmp,tmp->Structure[i].Name));
+				for(t=strlen(s+c);t<Size(tmp->Structure[i].Type);t++)
+					s[t+c]=' ';
+				}
+			if(!strcmp(tmp->Structure[i].Type,"LONG")) {
+				strcpy(s+c,GetField(tmp,tmp->Structure[i].Name));
+				t=c;
+				while(s[t]=='0')
+					s[t++]=' ';
+				}
+			c+=Size(tmp->Structure[i].Type);
+			s[c++]=' ';
+			s[c++]='|';
+			s[c++]=' ';
+			if(strcmp(s1=GetNextLex(f),",") && *s1) {
+				Error("User error : can't find such field");
+				return NULL;
+				}
+			}
+	s[c-1]='\n';
+	s[c]='\0';
+	Curr=curr;
+	free (s1);
+	return s;
+}
+
+int IsField(char *s,struct DB* tmp) {
+int i;
+	for(i=0;i<tmp->Number;i++)
+		if(!strcmp(tmp->Structure[i].Name,s))
+			return YES;
+	return NO;
+}
+

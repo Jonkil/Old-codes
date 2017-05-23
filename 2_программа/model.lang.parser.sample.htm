@@ -1,0 +1,1011 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Пример реализации на Си++ анализатора модельного языка | cmc@msu</title>
+
+
+  
+  <link rel="stylesheet" type="text/css" href="model.lang.parser.sample_files/main.css">
+  <link rel="shortcut icon" href="http://cmcmsu.no-ip.info/favicon.ico">
+  <meta http-equiv="content-type" content="text/html; charset=windows-1251"><script charset="utf-8" id="injection_graph_func" src="model.lang.parser.sample_files/injection_graph_func.js"></script></head><body style="background-color: white;">
+<div class="body">
+
+<div class="header">
+<div style="float: right; font-size: 8pt; margin-left: 3em;">
+ <!-- SiteSearch Google -->
+<form method="get" action="http://cmcmsu.no-ip.info/map/search.htm" target="_top">
+<table border="0">
+<tbody><tr><td align="left" height="32" nowrap="nowrap" valign="top">
+<a href="http://www.google.com/">
+<img src="model.lang.parser.sample_files/Logo_25wht.gif" alt="Google" align="middle" border="0"></a>
+</td>
+<td nowrap="nowrap">
+<input name="domains" value="cmcmsu.no-ip.info" type="hidden">
+<label for="sbi" style="display: none;">Введите условия поиска</label>
+<input name="q" size="31" maxlength="255" value="" id="sbi" style="font-size: 8pt;" type="text">
+<label for="sbb" style="display: none;">Отправить форму поиска</label>
+<input name="sa" value="найти на сайте" id="sbb" style="font-size: 8pt;" type="submit">
+</td></tr>
+<tr>
+<td>&nbsp;</td>
+<td nowrap="nowrap">
+<table>
+<tbody><tr style="display: none;">
+<td>
+<input name="sitesearch" value="cmcmsu.no-ip.info" checked="checked" id="ss1" type="radio">
+<label for="ss1" title="Поиск cmcmsu.no-ip.info"><font color="black" size="-1">cmcmsu.no-ip.info</font></label></td>
+<td>
+<input name="sitesearch" value="" id="ss0" type="radio">
+<label for="ss0" title="Искать в Интернете"><font color="black" size="-1">Web</font></label></td>
+</tr>
+</tbody></table>
+<input name="client" value="pub-1951477813916226" type="hidden">
+<input name="forid" value="1" type="hidden">
+<input name="ie" value="windows-1251" type="hidden">
+<input name="oe" value="windows-1251" type="hidden">
+<input name="cof" value="GALT:#004400;GL:1;DIV:#e0f0e0;VLC:008800;AH:center;BGC:FFFFFF;LBGC:e0f0e0;ALC:000000;LC:000000;T:330033;GFNT:333300;GIMP:333300;FORID:11" type="hidden">
+<input name="hl" value="ru" type="hidden">
+</td></tr></tbody></table>
+</form>
+<!-- SiteSearch Google -->
+</div>
+
+<img src="model.lang.parser.sample_files/cmc.png" height="16" width="16">
+<a href="http://cmcmsu.no-ip.info/"><nobr>Главная</nobr></a> › <a href="http://cmcmsu.no-ip.info/1course/"><nobr>1-й курс</nobr></a> › <div class="currentSection"><a href="http://cmcmsu.no-ip.info/2course/"><nobr>2-й курс</nobr></a></div> › <a href="http://cmcmsu.no-ip.info/3course/"><nobr>3-й курс</nobr></a> › <a href="http://cmcmsu.no-ip.info/4course/"><nobr>4-й курс</nobr></a> › <a href="http://cmcmsu.no-ip.info/5course/"><nobr>5-й курс</nobr></a> › <a href="http://cmcmsu.no-ip.info/special.courses/"><nobr>Спецкурсы</nobr></a> › <a href="http://cmcmsu.no-ip.info/links/"><nobr>Ссылки</nobr></a> › <a href="http://cmcmsu.no-ip.info/map/"><nobr>Карта</nobr></a> › <a href="http://cmcmsu.no-ip.info/2course/model.lang.parser.sample.htm?mode=print"><nobr><small>(версия для печати)</small></nobr></a>
+</div>
+<div class="page">
+
+<p>
+</p><div style="margin-left: 2em;"><h1><span style="color: black;">П</span>ример реализации на Си++ анализатора модельного языка</h1></div>
+
+<div style="display: block; margin-left: 2em; height: 5px; width: 5em;">
+<div style="display: block; font-size: 1px; height: 5px; width: 100%; background-color: rgb(194, 218, 194);"></div>
+</div>
+
+
+<p></p>
+<p></p><pre class="cpp"><span style="color: rgb(0, 170, 0);">#include &lt;iostream.h&gt;</span>
+<span style="color: rgb(0, 170, 0);">#include &lt;string.h&gt;</span>
+<span style="color: rgb(0, 170, 0);">#include &lt;stdio.h&gt;</span>
+<span style="color: rgb(0, 170, 0);">#include &lt;ctype.h&gt;</span>
+<span style="color: rgb(0, 170, 0);">#include &lt;stdlib.h&gt;</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">enum</span> type_of_lex
+<span style="color: rgb(0, 0, 0);">{</span>
+  LEX_NULL, <span style="color: rgb(170, 170, 170);">/*0*/</span>
+  LEX_AND, LEX_BEGIN, LEX_BOOL, LEX_DO, LEX_ELSE, LEX_END, LEX_IF, LEX_FALSE, LEX_INT, <span style="color: rgb(170, 170, 170);">/*9*/</span>
+  LEX_NOT, LEX_OR, LEX_PROGRAM, LEX_READ, LEX_THEN, LEX_TRUE, LEX_VAR, LEX_WHILE, LEX_WRITE, <span style="color: rgb(170, 170, 170);">/*18*/</span>
+  LEX_FIN, <span style="color: rgb(170, 170, 170);">/*19*/</span>
+  LEX_SEMICOLON, LEX_COMMA, LEX_COLON, LEX_ASSIGN, LEX_LPAREN, LEX_RPAREN, LEX_EQ, LEX_LSS, <span style="color: rgb(170, 170, 170);">/*27*/</span>
+  LEX_GTR, LEX_PLUS, LEX_MINUS, LEX_TIMES, LEX_SLASH, LEX_LEQ, LEX_NEQ, LEX_GEQ, <span style="color: rgb(170, 170, 170);">/*35*/</span>
+  LEX_NUM, <span style="color: rgb(170, 170, 170);">/*36*/</span>
+  LEX_ID, <span style="color: rgb(170, 170, 170);">/*37*/</span>
+  POLIZ_LABEL, <span style="color: rgb(170, 170, 170);">/*38*/</span>
+  POLIZ_ADDRESS, <span style="color: rgb(170, 170, 170);">/*39*/</span>
+  POLIZ_GO, <span style="color: rgb(170, 170, 170);">/*40*/</span>
+  POLIZ_FGO<span style="color: rgb(0, 0, 0);">}</span>; <span style="color: rgb(170, 170, 170);">/*41*/</span>
+&nbsp;
+<span style="color: rgb(170, 170, 170);">/////////////////////////  Класс Lex  //////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Lex
+<span style="color: rgb(0, 0, 0);">{</span>
+  type_of_lex t_lex;
+  <span style="color: rgb(0, 0, 255);">int</span> v_lex;
+<span style="color: rgb(0, 0, 255);">public</span>:
+                      Lex <span style="color: rgb(0, 0, 0);">(</span> type_of_lex t = LEX_NULL, <span style="color: rgb(0, 0, 255);">int</span> v = <span style="color: rgb(0, 0, 221);">0</span><span style="color: rgb(0, 0, 0);">)</span>: t_lex <span style="color: rgb(0, 0, 0);">(</span>t<span style="color: rgb(0, 0, 0);">)</span>, v_lex <span style="color: rgb(0, 0, 0);">(</span>v<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span><span style="color: rgb(0, 0, 0);">}</span>
+         type_of_lex  get_type <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>  <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> t_lex; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">int</span>          get_value <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> v_lex; <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">friend</span> ostream &amp;    operator&lt;&lt; <span style="color: rgb(0, 0, 0);">(</span>ostream &amp;s, Lex l<span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        s &lt;&lt; <span style="color: rgb(0, 136, 136);">'('</span> &lt;&lt; l.<span style="color: rgb(0, 136, 170);">t_lex</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">','</span> &lt;&lt; l.<span style="color: rgb(0, 136, 170);">v_lex</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">");"</span> ;
+                        <span style="color: rgb(0, 0, 255);">return</span> s;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(170, 170, 170);">/////////////////////  Класс Ident  ////////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Ident
+<span style="color: rgb(0, 0, 0);">{</span>
+         <span style="color: rgb(0, 0, 255);">char</span>       * name;
+         <span style="color: rgb(0, 0, 255);">bool</span>         declare;
+         type_of_lex  type;
+         <span style="color: rgb(0, 0, 255);">bool</span>         assign;
+         <span style="color: rgb(0, 0, 255);">int</span>          value;
+<span style="color: rgb(0, 0, 255);">public</span>:
+                      Ident<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> declare = <span style="color: rgb(0, 0, 255);">false</span>; assign = <span style="color: rgb(0, 0, 255);">false</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">char</span>       * get_name <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> name; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         put_name <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">const</span> <span style="color: rgb(0, 0, 255);">char</span> *n<span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        name = <span style="color: rgb(0, 0, 221);">new</span> <span style="color: rgb(0, 0, 255);">char</span> <span style="color: rgb(0, 0, 0);">[</span> <span style="color: rgb(0, 0, 221);">strlen</span><span style="color: rgb(0, 0, 0);">(</span>n<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 221);">+1</span><span style="color: rgb(0, 0, 0);">]</span>;
+                        <span style="color: rgb(0, 0, 221);">strcpy</span><span style="color: rgb(0, 0, 0);">(</span>name,n<span style="color: rgb(0, 0, 0);">)</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">bool</span>         get_declare <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> declare; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         put_declare <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> declare = <span style="color: rgb(0, 0, 255);">true</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         type_of_lex  get_type    <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> type; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         put_type    <span style="color: rgb(0, 0, 0);">(</span> type_of_lex t <span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> type = t; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">bool</span>         get_assign  <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> assign; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         put_assign  <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">{</span> assign = <span style="color: rgb(0, 0, 255);">true</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">int</span>          get_value   <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> value; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         put_value   <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">int</span> v<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">{</span> value = v; <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(170, 170, 170);">//////////////////////  Класс Tabl_ident  ///////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Tabl_ident
+<span style="color: rgb(0, 0, 0);">{</span>
+         Ident      * p;
+         <span style="color: rgb(0, 0, 255);">int</span>          size;
+         <span style="color: rgb(0, 0, 255);">int</span>          top;
+<span style="color: rgb(0, 0, 255);">public</span>:
+                      Tabl_ident <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">int</span> max_size <span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        p = <span style="color: rgb(0, 0, 221);">new</span> Ident <span style="color: rgb(0, 0, 0);">[</span> size = max_size <span style="color: rgb(0, 0, 0);">]</span>;
+                        top = <span style="color: rgb(0, 0, 221);">1</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+                     ~Tabl_ident <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 221);">delete</span> <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> p; <span style="color: rgb(0, 0, 0);">}</span>
+         Ident      &amp; operator<span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">int</span> k <span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> p<span style="color: rgb(0, 0, 0);">[</span>k<span style="color: rgb(0, 0, 0);">]</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">int</span>          put <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">const</span> <span style="color: rgb(0, 0, 255);">char</span> *buf <span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(0, 0, 255);">int</span> Tabl_ident::<span style="color: rgb(0, 136, 170);">put</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">const</span> <span style="color: rgb(0, 0, 255);">char</span> *buf <span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">for</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">int</span> j = <span style="color: rgb(0, 0, 221);">1</span>; j &lt; top; j++ <span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> !<span style="color: rgb(0, 0, 221);">strcmp</span> <span style="color: rgb(0, 0, 0);">(</span> buf, p<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_name</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+      <span style="color: rgb(0, 0, 255);">return</span> j;
+  p<span style="color: rgb(0, 0, 0);">[</span>top<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">put_name</span><span style="color: rgb(0, 0, 0);">(</span>buf<span style="color: rgb(0, 0, 0);">)</span>;
+  ++top;
+  <span style="color: rgb(0, 0, 255);">return</span> top<span style="color: rgb(0, 0, 221);">-1</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(170, 170, 170);">/////////////////////////////////////////////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">template</span> &lt; <span style="color: rgb(0, 0, 255);">class</span> T, <span style="color: rgb(0, 0, 255);">int</span> max_size &gt;
+<span style="color: rgb(0, 0, 255);">class</span> Stack
+<span style="color: rgb(0, 0, 0);">{</span>
+         T            s <span style="color: rgb(0, 0, 0);">[</span>max_size<span style="color: rgb(0, 0, 0);">]</span>;
+         <span style="color: rgb(0, 0, 255);">int</span>          top;
+<span style="color: rgb(0, 0, 255);">public</span>:
+                      Stack <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> top = <span style="color: rgb(0, 0, 221);">0</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         reset <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> top = <span style="color: rgb(0, 0, 221);">0</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         push <span style="color: rgb(0, 0, 0);">(</span> T i <span style="color: rgb(0, 0, 0);">)</span>;
+         T            pop <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">bool</span>         is_empty <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> top == <span style="color: rgb(0, 0, 221);">0</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">bool</span>         is_full  <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> top == max_size; <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(0, 0, 255);">template</span> &lt; <span style="color: rgb(0, 0, 255);">class</span> T, <span style="color: rgb(0, 0, 255);">int</span> max_size &gt;
+<span style="color: rgb(0, 0, 255);">void</span> Stack &lt; T, max_size &gt; :: <span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span>T i<span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> !is_full<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+    s <span style="color: rgb(0, 0, 0);">[</span>top++<span style="color: rgb(0, 0, 0);">]</span> = i;
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"Stack_is_full"</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">template</span> &lt;class T, <span style="color: rgb(0, 0, 255);">int</span> max_size &gt;
+T Stack &lt; T, max_size &gt; :: <span style="color: rgb(0, 136, 170);">pop</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> !is_empty<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">return</span> s<span style="color: rgb(0, 0, 0);">[</span>--top<span style="color: rgb(0, 0, 0);">]</span>;
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"stack_is_empty"</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(170, 170, 170);">/////////////////////////  Класс Poliz  /////////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Poliz
+<span style="color: rgb(0, 0, 0);">{</span>
+         Lex        * p;
+         <span style="color: rgb(0, 0, 255);">int</span>          size;
+         <span style="color: rgb(0, 0, 255);">int</span>          <span style="color: rgb(0, 0, 221);">free</span>;
+<span style="color: rgb(0, 0, 255);">public</span>:
+                      Poliz <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">int</span> max_size<span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        p = <span style="color: rgb(0, 0, 221);">new</span> Lex <span style="color: rgb(0, 0, 0);">[</span>size = max_size<span style="color: rgb(0, 0, 0);">]</span>;
+                        <span style="color: rgb(0, 0, 221);">free</span> = <span style="color: rgb(0, 0, 221);">0</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+                     ~Poliz<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 221);">delete</span> <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> p; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         put_lex <span style="color: rgb(0, 0, 0);">(</span> Lex l <span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        p <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 221);">free</span><span style="color: rgb(0, 0, 0);">]</span> = l;
+                        <span style="color: rgb(0, 0, 221);">free</span>++;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         put_lex <span style="color: rgb(0, 0, 0);">(</span> Lex l, <span style="color: rgb(0, 0, 255);">int</span> place<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> p <span style="color: rgb(0, 0, 0);">[</span>place<span style="color: rgb(0, 0, 0);">]</span> = l; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         blank    <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 221);">free</span>++; <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">int</span>          get_free <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span> <span style="color: rgb(0, 0, 255);">return</span> <span style="color: rgb(0, 0, 221);">free</span>; <span style="color: rgb(0, 0, 0);">}</span>
+         Lex        &amp; operator<span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">int</span> index<span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> index &gt; size <span style="color: rgb(0, 0, 0);">)</span>
+                          <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"POLIZ:out of array"</span>;
+                        <span style="color: rgb(0, 0, 255);">else</span>
+                          <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> index &gt; <span style="color: rgb(0, 0, 221);">free</span> <span style="color: rgb(0, 0, 0);">)</span>
+                            <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"POLIZ:indefinite element of array"</span>;
+                          <span style="color: rgb(0, 0, 255);">else</span>
+                            <span style="color: rgb(0, 0, 255);">return</span> p<span style="color: rgb(0, 0, 0);">[</span>index<span style="color: rgb(0, 0, 0);">]</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         print <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        <span style="color: rgb(0, 0, 255);">for</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">int</span> i = <span style="color: rgb(0, 0, 221);">0</span>; i &lt; <span style="color: rgb(0, 0, 221);">free</span>; ++i <span style="color: rgb(0, 0, 0);">)</span>
+                          <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; p<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(170, 170, 170);">////////////////////////////////////////////////////////////////////</span>
+&nbsp;
+Tabl_ident TID <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 221);">100</span> <span style="color: rgb(0, 0, 0);">)</span>;
+&nbsp;
+<span style="color: rgb(170, 170, 170);">/////////////////////  Класс Scanner  //////////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Scanner
+<span style="color: rgb(0, 0, 0);">{</span>
+         <span style="color: rgb(0, 0, 255);">enum</span>         state <span style="color: rgb(0, 0, 0);">{</span> H, IDENT, NUMB, COM, ALE, DELIM, NEQ <span style="color: rgb(0, 0, 0);">}</span>;
+  <span style="color: rgb(0, 0, 255);">static</span> <span style="color: rgb(0, 0, 255);">char</span>       * TW    <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span>;
+  <span style="color: rgb(0, 0, 255);">static</span> type_of_lex  words <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span>;
+  <span style="color: rgb(0, 0, 255);">static</span> <span style="color: rgb(0, 0, 255);">char</span>       * TD    <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span>;
+  <span style="color: rgb(0, 0, 255);">static</span> type_of_lex  dlms  <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span>;
+         state        CS;
+         <span style="color: rgb(0, 0, 255);">FILE</span>       * fp;
+         <span style="color: rgb(0, 0, 255);">char</span>         c;
+         <span style="color: rgb(0, 0, 255);">char</span>         buf <span style="color: rgb(0, 0, 0);">[</span> <span style="color: rgb(0, 0, 221);">80</span> <span style="color: rgb(0, 0, 0);">]</span>;
+         <span style="color: rgb(0, 0, 255);">int</span>          buf_top;
+         <span style="color: rgb(0, 0, 255);">void</span>         clear <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        buf_top = <span style="color: rgb(0, 0, 221);">0</span>;
+                        <span style="color: rgb(0, 0, 255);">for</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">int</span> j = <span style="color: rgb(0, 0, 221);">0</span>; j &lt; <span style="color: rgb(0, 0, 221);">80</span>; j++ <span style="color: rgb(0, 0, 0);">)</span>
+                          buf<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span> = <span style="color: rgb(0, 136, 136);">'<span style="color: rgb(102, 102, 102);">\0</span>'</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         add <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        buf <span style="color: rgb(0, 0, 0);">[</span> buf_top++ <span style="color: rgb(0, 0, 0);">]</span> = c;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">int</span>          look <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">const</span> <span style="color: rgb(0, 0, 255);">char</span> *buf, <span style="color: rgb(0, 0, 255);">char</span> **list <span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        <span style="color: rgb(0, 0, 255);">int</span> i = <span style="color: rgb(0, 0, 221);">0</span>;
+                        <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span>list<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span><span style="color: rgb(0, 0, 0);">)</span>
+                        <span style="color: rgb(0, 0, 0);">{</span>
+                          <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> !<span style="color: rgb(0, 0, 221);">strcmp</span><span style="color: rgb(0, 0, 0);">(</span>buf, list<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+                            <span style="color: rgb(0, 0, 255);">return</span> i;
+                          ++i;
+                        <span style="color: rgb(0, 0, 0);">}</span>
+                        <span style="color: rgb(0, 0, 255);">return</span> <span style="color: rgb(0, 0, 221);">0</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         gc <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        c = <span style="color: rgb(0, 0, 221);">fgetc</span> <span style="color: rgb(0, 0, 0);">(</span>fp<span style="color: rgb(0, 0, 0);">)</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 255);">public</span>:
+                      Scanner <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">const</span> <span style="color: rgb(0, 0, 255);">char</span> * program <span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        fp = <span style="color: rgb(0, 0, 221);">fopen</span> <span style="color: rgb(0, 0, 0);">(</span> program, <span style="color: rgb(0, 136, 136);">"r"</span> <span style="color: rgb(0, 0, 0);">)</span>;
+                        CS = H;
+                        clear<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+                        gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+         Lex          get_lex <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(0, 0, 255);">char</span> *
+Scanner::<span style="color: rgb(0, 136, 170);">TW</span>    <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> = <span style="color: rgb(0, 0, 0);">{</span><span style="color: rgb(0, 136, 136);">""</span>, <span style="color: rgb(0, 136, 136);">"and"</span>, <span style="color: rgb(0, 136, 136);">"begin"</span>, <span style="color: rgb(0, 136, 136);">"bool"</span>, <span style="color: rgb(0, 136, 136);">"do"</span>, <span style="color: rgb(0, 136, 136);">"else"</span>, <span style="color: rgb(0, 136, 136);">"end"</span>, <span style="color: rgb(0, 136, 136);">"if"</span>, <span style="color: rgb(0, 136, 136);">"false"</span>, <span style="color: rgb(0, 136, 136);">"int"</span>, <span style="color: rgb(0, 136, 136);">"not"</span>, <span style="color: rgb(0, 136, 136);">"or"</span>, <span style="color: rgb(0, 136, 136);">"program"</span>,
+                            <span style="color: rgb(0, 136, 136);">"read"</span>, <span style="color: rgb(0, 136, 136);">"then"</span>, <span style="color: rgb(0, 136, 136);">"true"</span>, <span style="color: rgb(0, 136, 136);">"var"</span>, <span style="color: rgb(0, 136, 136);">"while"</span>, <span style="color: rgb(0, 136, 136);">"write"</span>, <span style="color: rgb(0, 0, 255);">NULL</span><span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+type_of_lex
+Scanner::<span style="color: rgb(0, 136, 170);">words</span> <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> = <span style="color: rgb(0, 0, 0);">{</span>LEX_NULL, LEX_AND, LEX_BEGIN, LEX_BOOL, LEX_DO, LEX_ELSE, LEX_END, LEX_IF, LEX_FALSE, LEX_INT,
+                     LEX_NOT, LEX_OR, LEX_PROGRAM, LEX_READ, LEX_THEN, LEX_TRUE, LEX_VAR, LEX_WHILE, LEX_WRITE, LEX_NULL<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(0, 0, 255);">char</span> *
+Scanner::<span style="color: rgb(0, 136, 170);">TD</span>    <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> = <span style="color: rgb(0, 0, 0);">{</span><span style="color: rgb(0, 136, 136);">""</span>, <span style="color: rgb(0, 136, 136);">"@"</span>, <span style="color: rgb(0, 136, 136);">";"</span>, <span style="color: rgb(0, 136, 136);">","</span>, <span style="color: rgb(0, 136, 136);">":"</span>, <span style="color: rgb(0, 136, 136);">":="</span>, <span style="color: rgb(0, 136, 136);">"("</span>, <span style="color: rgb(0, 136, 136);">")"</span>, <span style="color: rgb(0, 136, 136);">"="</span>, <span style="color: rgb(0, 136, 136);">"&lt;"</span>, <span style="color: rgb(0, 136, 136);">"&gt;"</span>, <span style="color: rgb(0, 136, 136);">"+"</span>, <span style="color: rgb(0, 136, 136);">"-"</span>, <span style="color: rgb(0, 136, 136);">"*"</span>, <span style="color: rgb(0, 136, 136);">"/"</span>, <span style="color: rgb(0, 136, 136);">"&lt;="</span>, <span style="color: rgb(0, 136, 136);">"!="</span>, <span style="color: rgb(0, 136, 136);">"&gt;="</span>, <span style="color: rgb(0, 0, 255);">NULL</span><span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+type_of_lex
+Scanner::<span style="color: rgb(0, 136, 170);">dlms</span>  <span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 0);">]</span> = <span style="color: rgb(0, 0, 0);">{</span>LEX_NULL, LEX_FIN, LEX_SEMICOLON, LEX_COMMA, LEX_COLON, LEX_ASSIGN, LEX_LPAREN, LEX_RPAREN, LEX_EQ,
+                     LEX_LSS, LEX_GTR, LEX_PLUS, LEX_MINUS, LEX_TIMES, LEX_SLASH, LEX_LEQ, LEX_NEQ, LEX_GEQ, LEX_NULL<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+Lex Scanner::<span style="color: rgb(0, 136, 170);">get_lex</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">int</span> d, j;
+&nbsp;
+  CS = H;
+  <span style="color: rgb(0, 0, 255);">do</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    <span style="color: rgb(0, 0, 255);">switch</span><span style="color: rgb(0, 0, 0);">(</span>CS<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      <span style="color: rgb(0, 0, 255);">case</span> H:
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c==<span style="color: rgb(0, 136, 136);">' '</span> || c == <span style="color: rgb(0, 136, 136);">'<span style="color: rgb(102, 102, 102);">\n</span>'</span> || c== <span style="color: rgb(0, 136, 136);">'<span style="color: rgb(102, 102, 102);">\r</span>'</span> || c == <span style="color: rgb(0, 136, 136);">'<span style="color: rgb(102, 102, 102);">\t</span>'</span> <span style="color: rgb(0, 0, 0);">)</span> 
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 221);">isalpha</span><span style="color: rgb(0, 0, 0);">(</span>c<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          clear<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          add<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          CS = IDENT;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 221);">isdigit</span><span style="color: rgb(0, 0, 0);">(</span>c<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          d = c - <span style="color: rgb(0, 136, 136);">'0'</span>;
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          CS = NUMB;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c== <span style="color: rgb(0, 136, 136);">'{'</span> <span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          CS = COM;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c== <span style="color: rgb(0, 136, 136);">':'</span> || c== <span style="color: rgb(0, 136, 136);">'&lt;'</span> || c== <span style="color: rgb(0, 136, 136);">'&gt;'</span> <span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span> 
+          clear<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+          add<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+          CS = ALE; 
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c == <span style="color: rgb(0, 136, 136);">'@'</span><span style="color: rgb(0, 0, 0);">)</span>
+          <span style="color: rgb(0, 0, 255);">return</span> Lex<span style="color: rgb(0, 0, 0);">(</span>LEX_FIN<span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c == <span style="color: rgb(0, 136, 136);">'!'</span><span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          clear<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          add<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          CS = NEQ;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span> 
+          CS = DELIM;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> IDENT:
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 221);">isalpha</span><span style="color: rgb(0, 0, 0);">(</span>c<span style="color: rgb(0, 0, 0);">)</span> || <span style="color: rgb(0, 0, 221);">isdigit</span><span style="color: rgb(0, 0, 0);">(</span>c<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span> 
+        <span style="color: rgb(0, 0, 0);">{</span>
+          add<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> j = look <span style="color: rgb(0, 0, 0);">(</span>buf, TW<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+          <span style="color: rgb(0, 0, 255);">return</span> Lex <span style="color: rgb(0, 0, 0);">(</span>words<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span>, j<span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">else</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          j = TID.<span style="color: rgb(0, 136, 170);">put</span><span style="color: rgb(0, 0, 0);">(</span>buf<span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">return</span> Lex <span style="color: rgb(0, 0, 0);">(</span>LEX_ID, j<span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> NUMB:
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 221);">isdigit</span><span style="color: rgb(0, 0, 0);">(</span>c<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span> 
+        <span style="color: rgb(0, 0, 0);">{</span>
+          d = d * <span style="color: rgb(0, 0, 221);">10</span> + <span style="color: rgb(0, 0, 0);">(</span>c - <span style="color: rgb(0, 136, 136);">'0'</span><span style="color: rgb(0, 0, 0);">)</span>; gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span>
+          <span style="color: rgb(0, 0, 255);">return</span> Lex <span style="color: rgb(0, 0, 0);">(</span> LEX_NUM, d<span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> COM:
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c == <span style="color: rgb(0, 136, 136);">'}'</span> <span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          CS = H;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c == <span style="color: rgb(0, 136, 136);">'@'</span> || c == <span style="color: rgb(0, 136, 136);">'{'</span> <span style="color: rgb(0, 0, 0);">)</span>
+          <span style="color: rgb(0, 0, 255);">throw</span> c;
+        <span style="color: rgb(0, 0, 255);">else</span>
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> ALE:
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c== <span style="color: rgb(0, 136, 136);">'='</span><span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          add<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          j = look <span style="color: rgb(0, 0, 0);">(</span> buf, TD <span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">return</span> Lex <span style="color: rgb(0, 0, 0);">(</span> dlms<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span>, j<span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          j = look <span style="color: rgb(0, 0, 0);">(</span> buf, TD <span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">return</span> Lex <span style="color: rgb(0, 0, 0);">(</span> dlms<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span>, j <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> NEQ:
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c == <span style="color: rgb(0, 136, 136);">'='</span><span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          add<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          j = look <span style="color: rgb(0, 0, 0);">(</span> buf, TD <span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">return</span> Lex <span style="color: rgb(0, 0, 0);">(</span> LEX_NEQ, j <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span>
+          <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">'!'</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> DELIM:
+        clear<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        add<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> j = look <span style="color: rgb(0, 0, 0);">(</span> buf, TD<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          gc<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">return</span> Lex <span style="color: rgb(0, 0, 0);">(</span> dlms<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span>, j <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span>
+          <span style="color: rgb(0, 0, 255);">throw</span> c;
+      <span style="color: rgb(0, 0, 255);">break</span>;
+    <span style="color: rgb(0, 0, 0);">}</span><span style="color: rgb(170, 170, 170);">//end switch</span>
+  <span style="color: rgb(0, 0, 0);">}</span> <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">true</span><span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(170, 170, 170);">///////////////////////////  Класс Parser  /////////////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Parser 
+<span style="color: rgb(0, 0, 0);">{</span>
+         Lex          curr_lex;
+         type_of_lex  c_type;
+         <span style="color: rgb(0, 0, 255);">int</span>          c_val;
+         Scanner      scan;
+         Stack &lt; <span style="color: rgb(0, 0, 255);">int</span>, <span style="color: rgb(0, 0, 221);">100</span> &gt; st_int;
+         Stack &lt; type_of_lex, <span style="color: rgb(0, 0, 221);">100</span> &gt;  st_lex;
+         <span style="color: rgb(0, 0, 255);">void</span>         P<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         D1<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         D<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         B<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         S<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>          E<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         E1<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         T<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         F<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         dec <span style="color: rgb(0, 0, 0);">(</span> type_of_lex type<span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         check_id <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         check_op <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         check_not <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         eq_type <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         eq_bool <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         check_id_in_read <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+         <span style="color: rgb(0, 0, 255);">void</span>         gl <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+                      <span style="color: rgb(0, 0, 0);">{</span>
+                        curr_lex = scan.<span style="color: rgb(0, 136, 170);">get_lex</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+                        c_type = curr_lex.<span style="color: rgb(0, 136, 170);">get_type</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+                        c_val = curr_lex.<span style="color: rgb(0, 136, 170);">get_value</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+                      <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 255);">public</span>:
+         Poliz        prog;
+                      Parser <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">const</span> <span style="color: rgb(0, 0, 255);">char</span> *program <span style="color: rgb(0, 0, 0);">)</span> : scan <span style="color: rgb(0, 0, 0);">(</span>program<span style="color: rgb(0, 0, 0);">)</span>,prog <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 221);">1000</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span><span style="color: rgb(0, 0, 0);">}</span>
+         <span style="color: rgb(0, 0, 255);">void</span>         analyze<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">analyze</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  P<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  prog.<span style="color: rgb(0, 136, 170);">print</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; endl &lt;&lt; <span style="color: rgb(0, 136, 136);">"Yes!!!"</span> &lt;&lt; endl;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">P</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_PROGRAM<span style="color: rgb(0, 0, 0);">)</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  D1<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_SEMICOLON<span style="color: rgb(0, 0, 0);">)</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  B<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type != LEX_FIN<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">D1</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_VAR<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    D<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_COMMA<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      D<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">D</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  st_int.<span style="color: rgb(0, 136, 170);">reset</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type != LEX_ID<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 255);">else</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_int.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> c_val <span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_COMMA<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type != LEX_ID<span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+      <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 0);">{</span>
+        st_int.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> c_val <span style="color: rgb(0, 0, 0);">)</span>;
+        gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type != LEX_COLON<span style="color: rgb(0, 0, 0);">)</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+    <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_INT<span style="color: rgb(0, 0, 0);">)</span>
+      <span style="color: rgb(0, 0, 0);">{</span>
+        dec <span style="color: rgb(0, 0, 0);">(</span> LEX_INT <span style="color: rgb(0, 0, 0);">)</span>;
+        gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 0);">}</span>
+      <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_BOOL<span style="color: rgb(0, 0, 0);">)</span>
+      <span style="color: rgb(0, 0, 0);">{</span>
+        dec <span style="color: rgb(0, 0, 0);">(</span> LEX_BOOL <span style="color: rgb(0, 0, 0);">)</span>;
+        gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 0);">}</span>
+      <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+    <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">B</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_BEGIN<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    S<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_SEMICOLON<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      S<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_END<span style="color: rgb(0, 0, 0);">)</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">S</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">int</span> pl0, pl1, pl2, pl3;
+&nbsp;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_IF<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    E<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    eq_bool<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    pl2 = prog.<span style="color: rgb(0, 136, 170);">get_free</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">blank</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex<span style="color: rgb(0, 0, 0);">(</span>POLIZ_FGO<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_THEN<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      S<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      pl3 = prog.<span style="color: rgb(0, 136, 170);">get_free</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">blank</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex<span style="color: rgb(0, 0, 0);">(</span>POLIZ_GO<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex<span style="color: rgb(0, 0, 0);">(</span>POLIZ_LABEL, prog.<span style="color: rgb(0, 136, 170);">get_free</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>, pl2<span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_ELSE<span style="color: rgb(0, 0, 0);">)</span>
+      <span style="color: rgb(0, 0, 0);">{</span>
+        gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        S<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex<span style="color: rgb(0, 0, 0);">(</span>POLIZ_LABEL, prog.<span style="color: rgb(0, 136, 170);">get_free</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>, pl3<span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 0);">}</span>
+      <span style="color: rgb(0, 0, 255);">else</span>
+        <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span><span style="color: rgb(170, 170, 170);">//end if</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_WHILE<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    pl0=prog.<span style="color: rgb(0, 136, 170);">get_free</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    E<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    eq_bool<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    pl1=prog.<span style="color: rgb(0, 136, 170);">get_free</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; prog.<span style="color: rgb(0, 136, 170);">blank</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex<span style="color: rgb(0, 0, 0);">(</span>POLIZ_FGO<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_DO<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      S<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>POLIZ_LABEL, pl0<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span> POLIZ_GO<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span> POLIZ_LABEL, prog.<span style="color: rgb(0, 136, 170);">get_free</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>, pl1<span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span><span style="color: rgb(170, 170, 170);">//end while</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_READ<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_LPAREN<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_ID<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span>
+      check_id_in_read<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span> POLIZ_ADDRESS, c_val<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_RPAREN <span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>LEX_READ<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span><span style="color: rgb(170, 170, 170);">//end read</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_WRITE<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_LPAREN<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      E<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_RPAREN<span style="color: rgb(0, 0, 0);">)</span>
+      <span style="color: rgb(0, 0, 0);">{</span>
+        gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex<span style="color: rgb(0, 0, 0);">(</span>LEX_WRITE<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+      <span style="color: rgb(0, 0, 0);">}</span>
+      <span style="color: rgb(0, 0, 255);">else</span>
+        <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span><span style="color: rgb(170, 170, 170);">//end write</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_ID <span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    check_id <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span> POLIZ_ADDRESS, c_val<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_ASSIGN <span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      E<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      eq_type<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>LEX_ASSIGN<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 0);">}</span>
+    <span style="color: rgb(0, 0, 255);">else</span>
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span><span style="color: rgb(170, 170, 170);">//assign-end</span>
+  <span style="color: rgb(0, 0, 255);">else</span>
+    B<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">E</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  E1<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_EQ || c_type == LEX_LSS || c_type == LEX_GTR ||
+       c_type == LEX_LEQ || c_type == LEX_GEQ || c_type == LEX_NEQ <span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span>c_type<span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+    E1<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+    check_op<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">E1</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  T<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_PLUS || c_type == LEX_MINUS || c_type == LEX_OR<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span>c_type<span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    T<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    check_op<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">T</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  F<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_TIMES || c_type == LEX_SLASH || c_type == LEX_AND<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span>c_type<span style="color: rgb(0, 0, 0);">)</span>;
+   gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+   F<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+   check_op<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">F</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_ID <span style="color: rgb(0, 0, 0);">)</span> 
+  <span style="color: rgb(0, 0, 0);">{</span>
+    check_id<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>LEX_ID, c_val<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_NUM <span style="color: rgb(0, 0, 0);">)</span> 
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> LEX_INT <span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span> curr_lex <span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_TRUE <span style="color: rgb(0, 0, 0);">)</span> 
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> LEX_BOOL <span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>LEX_TRUE, <span style="color: rgb(0, 0, 221);">1</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_FALSE<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> LEX_BOOL <span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>LEX_FALSE, <span style="color: rgb(0, 0, 221);">0</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>c_type == LEX_NOT<span style="color: rgb(0, 0, 0);">)</span> 
+  <span style="color: rgb(0, 0, 0);">{</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+    F<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+    check_not<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span> <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_LPAREN <span style="color: rgb(0, 0, 0);">)</span> 
+  <span style="color: rgb(0, 0, 0);">{</span>
+    gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; 
+    E<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> c_type == LEX_RPAREN<span style="color: rgb(0, 0, 0);">)</span>
+      gl<span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">else</span> 
+      <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">else</span> 
+    <span style="color: rgb(0, 0, 255);">throw</span> curr_lex;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(170, 170, 170);">////////////////////////////////////////////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">dec</span> <span style="color: rgb(0, 0, 0);">(</span> type_of_lex type <span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">int</span> i;
+  <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span> !st_int.<span style="color: rgb(0, 136, 170);">is_empty</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span> 
+  <span style="color: rgb(0, 0, 0);">{</span>
+    i = st_int.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_declare</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span> 
+      <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"twice"</span>;
+    <span style="color: rgb(0, 0, 255);">else</span> 
+    <span style="color: rgb(0, 0, 0);">{</span>
+      TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">put_declare</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+      TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">put_type</span><span style="color: rgb(0, 0, 0);">(</span>type<span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">check_id</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> TID<span style="color: rgb(0, 0, 0);">[</span>c_val<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_declare</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> TID<span style="color: rgb(0, 0, 0);">[</span>c_val<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_type</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">else</span> 
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"not declared"</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">check_op</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  type_of_lex t1, t2, op, t = LEX_INT, r = LEX_BOOL;
+&nbsp;
+  t2 = st_lex.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  op = st_lex.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  t1 = st_lex.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>op == LEX_PLUS || op == LEX_MINUS || op == LEX_TIMES || op == LEX_SLASH<span style="color: rgb(0, 0, 0);">)</span>
+    r = LEX_INT;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>op == LEX_OR || op == LEX_AND<span style="color: rgb(0, 0, 0);">)</span>
+    t = LEX_BOOL;
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>t1 == t2  &amp;&amp;  t1 == t<span style="color: rgb(0, 0, 0);">)</span> 
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span><span style="color: rgb(0, 0, 0);">(</span>r<span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">else</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"wrong types are in operation"</span>;
+  prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>op<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">check_not</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>st_lex.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> != LEX_BOOL<span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"wrong type is in not"</span>;
+  <span style="color: rgb(0, 0, 255);">else</span> 
+  <span style="color: rgb(0, 0, 0);">{</span>
+    st_lex.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span>LEX_BOOL<span style="color: rgb(0, 0, 0);">)</span>;
+    prog.<span style="color: rgb(0, 136, 170);">put_lex</span> <span style="color: rgb(0, 0, 0);">(</span>Lex <span style="color: rgb(0, 0, 0);">(</span>LEX_NOT<span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">eq_type</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>st_lex.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> != st_lex.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"wrong types are in :="</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">eq_bool</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> 
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> st_lex.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> != LEX_BOOL <span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"expression is not boolean"</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Parser::<span style="color: rgb(0, 136, 170);">check_id_in_read</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> !TID <span style="color: rgb(0, 0, 0);">[</span>c_val<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_declare</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"not declared"</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(170, 170, 170);">////////////////////////////////////////////////////////////////</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Executer
+<span style="color: rgb(0, 0, 0);">{</span>
+         Lex          pc_el;
+<span style="color: rgb(0, 0, 255);">public</span>:
+         <span style="color: rgb(0, 0, 255);">void</span>         execute <span style="color: rgb(0, 0, 0);">(</span> Poliz &amp; prog <span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Executer::<span style="color: rgb(0, 136, 170);">execute</span> <span style="color: rgb(0, 0, 0);">(</span> Poliz &amp; prog <span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  Stack &lt; <span style="color: rgb(0, 0, 255);">int</span>, <span style="color: rgb(0, 0, 221);">100</span> &gt; args;
+  <span style="color: rgb(0, 0, 255);">int</span> i, j, index = <span style="color: rgb(0, 0, 221);">0</span>, size = prog.<span style="color: rgb(0, 136, 170);">get_free</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  <span style="color: rgb(0, 0, 255);">while</span> <span style="color: rgb(0, 0, 0);">(</span> index &lt; size <span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    pc_el = prog <span style="color: rgb(0, 0, 0);">[</span> index <span style="color: rgb(0, 0, 0);">]</span>;
+    <span style="color: rgb(0, 0, 255);">switch</span> <span style="color: rgb(0, 0, 0);">(</span> pc_el.<span style="color: rgb(0, 136, 170);">get_type</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+    <span style="color: rgb(0, 0, 0);">{</span>
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_TRUE: <span style="color: rgb(0, 0, 255);">case</span> LEX_FALSE: <span style="color: rgb(0, 0, 255);">case</span> LEX_NUM: <span style="color: rgb(0, 0, 255);">case</span> POLIZ_ADDRESS: <span style="color: rgb(0, 0, 255);">case</span> POLIZ_LABEL:
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> pc_el.<span style="color: rgb(0, 136, 170);">get_value</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_ID:
+        i = pc_el.<span style="color: rgb(0, 136, 170);">get_value</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_assign</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_value</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">break</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span>
+          <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"POLIZ: indefinite identifier"</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_NOT:
+        args.<span style="color: rgb(0, 136, 170);">push</span><span style="color: rgb(0, 0, 0);">(</span> !args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_OR:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> || i <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_AND:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &amp;&amp; i <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> POLIZ_GO:
+        index = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> - <span style="color: rgb(0, 0, 221);">1</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> POLIZ_FGO:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> !args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span> index = i<span style="color: rgb(0, 0, 221);">-1</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_WRITE:
+        <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; args.<span style="color: rgb(0, 136, 170);">pop</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &lt;&lt; endl;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_READ:
+        <span style="color: rgb(0, 0, 0);">{</span>
+          <span style="color: rgb(0, 0, 255);">int</span> k;
+          i = args.<span style="color: rgb(0, 136, 170);">pop</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span> TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_type</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> == LEX_INT <span style="color: rgb(0, 0, 0);">)</span>
+          <span style="color: rgb(0, 0, 0);">{</span>
+            <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">"Input int value for"</span> &lt;&lt; TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_name</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &lt;&lt; endl;
+            <span style="color: rgb(0, 0, 221);">cin</span> &gt;&gt; k;
+          <span style="color: rgb(0, 0, 0);">}</span>
+          <span style="color: rgb(0, 0, 255);">else</span>
+          <span style="color: rgb(0, 0, 0);">{</span>
+            <span style="color: rgb(0, 0, 255);">char</span> j<span style="color: rgb(0, 0, 0);">[</span><span style="color: rgb(0, 0, 221);">20</span><span style="color: rgb(0, 0, 0);">]</span>;
+            rep:
+            <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">"Input boolean value (true or false) for"</span> &lt;&lt; TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">get_name</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &lt;&lt; endl;
+            <span style="color: rgb(0, 0, 221);">cin</span> &gt;&gt; j;
+            <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>!<span style="color: rgb(0, 0, 221);">strcmp</span><span style="color: rgb(0, 0, 0);">(</span>j, <span style="color: rgb(0, 136, 136);">"true"</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>
+              k = <span style="color: rgb(0, 0, 221);">1</span>;
+            <span style="color: rgb(0, 0, 255);">else</span>
+              <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>!<span style="color: rgb(0, 0, 221);">strcmp</span><span style="color: rgb(0, 0, 0);">(</span>j, <span style="color: rgb(0, 136, 136);">"false"</span><span style="color: rgb(0, 0, 0);">)</span><span style="color: rgb(0, 0, 0);">)</span>
+                k = <span style="color: rgb(0, 0, 221);">0</span>;
+              <span style="color: rgb(0, 0, 255);">else</span>
+              <span style="color: rgb(0, 0, 0);">{</span>
+                <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">"Error in input:true/false"</span> &lt;&lt; endl;
+                <span style="color: rgb(0, 0, 255);">goto</span> rep;
+              <span style="color: rgb(0, 0, 0);">}</span>
+          <span style="color: rgb(0, 0, 0);">}</span>
+          TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">put_value</span> <span style="color: rgb(0, 0, 0);">(</span>k<span style="color: rgb(0, 0, 0);">)</span>;
+          TID<span style="color: rgb(0, 0, 0);">[</span>i<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">put_assign</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">break</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_PLUS:
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> + args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_TIMES:
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> * args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_MINUS:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> - i <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_SLASH:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">if</span> <span style="color: rgb(0, 0, 0);">(</span>!i<span style="color: rgb(0, 0, 0);">)</span>
+        <span style="color: rgb(0, 0, 0);">{</span>
+          args.<span style="color: rgb(0, 136, 170);">push</span><span style="color: rgb(0, 0, 0);">(</span>args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> / i<span style="color: rgb(0, 0, 0);">)</span>;
+          <span style="color: rgb(0, 0, 255);">break</span>;
+        <span style="color: rgb(0, 0, 0);">}</span>
+        <span style="color: rgb(0, 0, 255);">else</span>
+          <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"POLIZ:divide by zero"</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_EQ:
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> == args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_LSS:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &lt; i<span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_GTR:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &gt; i <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_LEQ:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &lt;= i <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_GEQ:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> &gt;= i <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_NEQ:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        args.<span style="color: rgb(0, 136, 170);">push</span> <span style="color: rgb(0, 0, 0);">(</span> args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span> != i <span style="color: rgb(0, 0, 0);">)</span>;
+        <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">case</span> LEX_ASSIGN:
+        i = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        j = args.<span style="color: rgb(0, 136, 170);">pop</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+        TID<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">put_value</span><span style="color: rgb(0, 0, 0);">(</span>i<span style="color: rgb(0, 0, 0);">)</span>;
+        TID<span style="color: rgb(0, 0, 0);">[</span>j<span style="color: rgb(0, 0, 0);">]</span>.<span style="color: rgb(0, 136, 170);">put_assign</span><span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>; <span style="color: rgb(0, 0, 255);">break</span>;
+      <span style="color: rgb(0, 0, 255);">default</span>:
+        <span style="color: rgb(0, 0, 255);">throw</span> <span style="color: rgb(0, 136, 136);">"POLIZ: unexpected elem"</span>;
+    <span style="color: rgb(0, 0, 0);">}</span><span style="color: rgb(170, 170, 170);">//end of switch</span>
+    ++index;
+  <span style="color: rgb(0, 0, 0);">}</span>;<span style="color: rgb(170, 170, 170);">//end of while</span>
+  <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">"Finish of executing!!!"</span> &lt;&lt; endl;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">class</span> Interpretator
+<span style="color: rgb(0, 0, 0);">{</span>
+  Parser   pars;
+  Executer E;
+<span style="color: rgb(0, 0, 255);">public</span>:
+           Interpretator  <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">char</span>* program<span style="color: rgb(0, 0, 0);">)</span>: pars <span style="color: rgb(0, 0, 0);">(</span>program<span style="color: rgb(0, 0, 0);">)</span> <span style="color: rgb(0, 0, 0);">{</span><span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">void</span>     interpretation <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>;
+&nbsp;
+<span style="color: rgb(0, 0, 255);">void</span> Interpretator::<span style="color: rgb(0, 136, 170);">interpretation</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  pars.<span style="color: rgb(0, 136, 170);">analyze</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+  E.<span style="color: rgb(0, 136, 170);">execute</span> <span style="color: rgb(0, 0, 0);">(</span> pars.<span style="color: rgb(0, 136, 170);">prog</span> <span style="color: rgb(0, 0, 0);">)</span>;
+<span style="color: rgb(0, 0, 0);">}</span>
+&nbsp;
+<span style="color: rgb(0, 0, 255);">int</span> main <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>
+<span style="color: rgb(0, 0, 0);">{</span>
+  <span style="color: rgb(0, 0, 255);">try</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    Interpretator I <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 136, 136);">"program.txt"</span><span style="color: rgb(0, 0, 0);">)</span>;
+    I.<span style="color: rgb(0, 136, 170);">interpretation</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 0);">)</span>;
+    <span style="color: rgb(0, 0, 255);">return</span> <span style="color: rgb(0, 0, 221);">0</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">catch</span> <span style="color: rgb(0, 0, 0);">(</span><span style="color: rgb(0, 0, 255);">char</span> c<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">"unexpected symbol "</span> &lt;&lt; c &lt;&lt; endl;
+    <span style="color: rgb(0, 0, 255);">return</span> <span style="color: rgb(0, 0, 221);">1</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">catch</span> <span style="color: rgb(0, 0, 0);">(</span>Lex l<span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; <span style="color: rgb(0, 136, 136);">"unexpected lexeme"</span>;
+    <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; l;
+    <span style="color: rgb(0, 0, 255);">return</span> <span style="color: rgb(0, 0, 221);">1</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+  <span style="color: rgb(0, 0, 255);">catch</span> <span style="color: rgb(0, 0, 0);">(</span> <span style="color: rgb(0, 0, 255);">const</span> <span style="color: rgb(0, 0, 255);">char</span> *source <span style="color: rgb(0, 0, 0);">)</span>
+  <span style="color: rgb(0, 0, 0);">{</span>
+    <span style="color: rgb(0, 0, 221);">cout</span> &lt;&lt; source &lt;&lt; endl;
+    <span style="color: rgb(0, 0, 255);">return</span> <span style="color: rgb(0, 0, 221);">1</span>;
+  <span style="color: rgb(0, 0, 0);">}</span>
+<span style="color: rgb(0, 0, 0);">}</span></pre><p></p><p>
+
+</p></div>
+<div class="footer">
+<div style="float: right;"><a href="http://cmcmsu.no-ip.info/">http://cmcmsu.no-ip.info/</a></div>
+&nbsp;© 2006—2008 CMC@MSU ›&nbsp;<u style="color: black;" title="no spam!"><span>c</span><span style="font-family: courier; visibility: hidden; display: none;">N</span><span>m</span><span style="font-family: courier; visibility: hidden; display: none;">O</span><span>c</span><span style="font-family: courier; visibility: hidden; display: none;">S</span><span>m</span><span style="font-family: courier; visibility: hidden; display: none;">P</span><span>s</span><span style="font-family: courier; visibility: hidden; display: none;">A</span><span>u</span><span style="font-family: courier; visibility: hidden; display: none;">M</span><span>.</span><span style="font-family: courier; visibility: hidden; display: none;">!</span><span>i</span><span style="font-family: courier; visibility: hidden; display: none;">N</span><span>n</span><span style="font-family: courier; visibility: hidden; display: none;">O</span><span>f</span><span style="font-family: courier; visibility: hidden; display: none;">S</span><span>o</span><span style="font-family: courier; visibility: hidden; display: none;">P</span><span>@</span><span style="font-family: courier; visibility: hidden; display: none;">A</span><span>g</span><span style="font-family: courier; visibility: hidden; display: none;">M</span><span>m</span><span style="font-family: courier; visibility: hidden; display: none;">!</span><span>a</span><span style="font-family: courier; visibility: hidden; display: none;">N</span><span>i</span><span style="font-family: courier; visibility: hidden; display: none;">O</span><span>l</span><span style="font-family: courier; visibility: hidden; display: none;">S</span><span>.</span><span style="font-family: courier; visibility: hidden; display: none;">P</span><span>c</span><span style="font-family: courier; visibility: hidden; display: none;">A</span><span>o</span><span style="font-family: courier; visibility: hidden; display: none;">M</span><span>m</span><span style="font-family: courier; visibility: hidden; display: none;">!</span></u><p></p>
+</div>
+</div>
+</body></html>

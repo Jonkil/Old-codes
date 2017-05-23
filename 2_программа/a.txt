@@ -1,0 +1,16 @@
+program{
+real a=2.23;
+int b=5;
+int i=0,s=0;
+while(s!=4){
+s=s+1;
+write("summa=",s);
+if(b>0)b=a;else a=b;
+read(a);
+for(i=0;;i=i+1){
+a=a+5;
+write(a);}
+}
+write("a=",a);
+write("s=",s,"finish!!!");
+}

@@ -1,0 +1,162 @@
+#include "mysocket.h"
+#include <list>
+#define cl struct cl_info
+int getname(char* hehe, const char* name)
+{ 
+char temp[20];
+  int i=0;
+ while ((temp[i]=name[i])!=':') { i++; if (i==19) return 1;}
+ temp[i]='\0';
+ strcpy(hehe, temp);
+ return 0;
+}
+cl
+{
+  char name[20];
+  int fd;
+};
+int main (int argc, char** argv){
+  cl info;
+  list<cl> fd_list;
+  list<cl>::iterator iter, iter2;
+  fd_set f;
+  int fd, fd_max, fd_listen, size;
+  char buf[80];
+  char cname[20];
+  const char* ent=" entered the chat. \n";
+  const char* err="ERROR: Nickname is already in use. \n";
+  const char* notfound="ERROR: User not found. Wrong nickname? \n";
+  const char* wrt=" wrote: \n";
+  const char* to=" ---> ";
+  const char* sp="  ";
+  const char* ser="CEPBEP: ";
+  const char* left=" left the chat. \n";
+  sockaddr_in client;
+  bool flag;
+ if (argc<2)  { cerr << "Error: Few arguments" <<endl; exit(1); }
+ ServSocket A(atoi(argv[1])); 
+ fd_listen=A.GetDescr();
+ A.Bind();
+ A.Listen(5);
+  while(1){
+  FD_ZERO(&f);
+  FD_SET(fd_listen, &f);
+  FD_SET(0, &f); 
+  iter=fd_list.begin();
+  fd_max=fd_listen;
+     // Setting arg-s for select
+     if (!fd_list.empty())
+     {
+		for (iter=fd_list.begin(); iter!=fd_list.end(); iter++)
+			{
+			 if (fd_max < iter->fd) fd_max=iter->fd;
+  			 FD_SET(iter->fd, &f);
+			}
+     }
+  if (select(fd_max+1, &f, NULL, NULL, NULL)<0) { perror("select"); exit(1); }
+  //Listen socket available
+  if (FD_ISSET(fd_listen, &f)){
+		fd=A.Accept(); 
+ 		size=read(fd, buf, 20);
+  		buf[size+1]='\0';
+//  		cerr << "New man: " << buf << endl;
+		if (!fd_list.empty())
+		{
+			if (fd_list.size()==1)
+			{
+				iter=fd_list.begin();
+				if (!strcmp(iter->name, buf)) { buf[0]='\0';  write(fd, buf, size); }
+							else write(fd, buf, strlen(buf)+1);
+			}
+			else
+			{
+			   for (iter=fd_list.begin(); iter!=fd_list.end(); iter++)
+			   {
+			    if (!strcmp(iter->name, buf)) 
+			      { 
+				   buf[0]='\0'; break;
+			      }
+			   }
+			write(fd, buf, strlen(buf)+1); 
+			}
+		}
+		if (buf[0]!='\0')
+		{
+		write(1, buf, size); write (1, ent, strlen(ent)+1);
+		for (iter=fd_list.begin(); iter!=fd_list.end(); iter++)
+			{
+				 write(iter->fd, buf, size); write (iter->fd, ent, strlen(ent)+1);
+			} 
+		
+		buf[size+1]='\0';
+		strcpy(info.name, buf);
+		info.fd=fd;
+		fd_list.push_back(info);
+		}
+	}
+  // Std in
+  if (FD_ISSET(0,&f)) 
+     {
+	 size=read(0, buf, 80);
+	 if (!size) break;
+	 if ((buf[0]==';') && (buf[1]=='q')) break; 
+	 for (iter=fd_list.begin(); iter!=fd_list.end(); iter++)
+			{
+				write(iter->fd, ser, strlen(ser)+1);
+				write(iter->fd, buf, size); 
+			} 
+   }
+  // Looking for client sockets
+  if (!fd_list.empty())
+     {
+	for (iter=fd_list.begin(); iter!=fd_list.end(); iter++)
+		{
+		if (FD_ISSET(iter->fd, &f)) 
+			{
+			if ((size=read(iter->fd, buf, 80))==0) 
+				{
+				write(1,iter->name, strlen(iter->name)+1);
+				write(1,left, strlen(left)+1);
+				for (iter2=fd_list.begin(), flag=false; iter2!=fd_list.end(); iter2++)
+				   {
+				    if (iter2->fd!=iter->fd) 
+					{
+					     write(iter2->fd,iter->name, strlen(iter->name)+1);
+					     write(iter2->fd, left, strlen(left)+1);
+					}
+				   }
+				fd_list.erase(iter);
+				}
+			buf[size+1]='\0';
+			if (getname(cname, buf)) break;
+			flag=false;
+	 		for (iter2=fd_list.begin(), flag=false; iter2!=fd_list.end(); iter2++)
+				{
+					if (!strcmp(iter2->name, cname)) { flag=true; break; }
+				}
+			if (flag)
+				{
+				//on server
+				write(1,iter->name, strlen(iter->name)+1);
+				write(1,to, strlen(to)+1);
+				write(1,iter2->name, strlen(iter2->name)+1);
+				write (1, sp, 1);
+				write(1, buf+strlen(cname)+2, strlen(buf)-strlen(cname)-3);
+				//Klientu
+				write(iter2->fd,iter->name, strlen(iter->name)+1);
+				write(iter2->fd, wrt, strlen(wrt)+1);
+				write(iter2->fd, buf+strlen(cname)+2, strlen(buf)-strlen(cname)-3);
+				}
+			else
+				{
+				write(iter->fd, ser, strlen(ser)+1);
+				write(iter->fd, notfound, strlen(notfound)+1);
+				}
+			}
+		}     
+     }
+}
+  A.Shutdown();
+  A.Close();
+return 0;
+}

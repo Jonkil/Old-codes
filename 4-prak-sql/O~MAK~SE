@@ -1,0 +1,12 @@
+CC=ucbcc
+#CC=gcc
+#CC=/usr/lang/acc
+OBJS=server.o utils.o sql.o
+#CFLAGS=-g
+LDLIBS=-lg++
+
+exe : $(OBJS)
+	$(CC) -o server $(OBJS) $(LDLIBS)
+server.o : server.c sql.h utils.h
+sql.o : sql.c sql.h utils.h server.h
+utils.o : utils.c utils.h sql.h server.h
